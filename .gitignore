@@ -1,0 +1,17 @@
+*
+!.gitignore
+!/**/
+
+!*.hpp
+!*.h
+!*.hxx
+
+!*.cpp
+!*.c
+!*.cxx
+
+!*.vcxproj
+!*.sln
+
+# Opcodes definition files
+!*.ttt
