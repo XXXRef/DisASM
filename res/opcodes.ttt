@@ -1,0 +1,280 @@
+0000111110uuu001                        pop s               
+000ff111                                pop s               
+000ff110                                push s              
+0000111110uuu000                        push s              
+00110111                                aaa                 
+1101010100001010                        aad                 
+1101010000001010                        aam                 
+00111111                                aas                 
+000100dw                 11 reg1  reg2  adc rp              
+000100dw                 md reg   r/m   adc rm              
+100000sw                 11 010   reg   adc ri              
+0001010w                                adc ai              
+100000sw                 md 010   r/m   adc mi              
+000000dw                 11 reg1  reg2  add rp              
+000000dw                 md reg   r/m   add rm              
+100000sw                 11 000   reg   add ri              
+0000010w                                add ai              
+100000sw                 md 000   r/m   add mi              
+001000dw                 11 reg1  reg2  and rp              
+001000dw                 md reg   r/m   and rm              
+100000sw                 11 100   reg   and ri              
+0010010w                                and ai              
+100000sw                 md 100   r/m   and mi              
+01100011                 11 reg1  reg2  arpl rp             
+01100011                 md reg   r/m   arpl rm             
+01100010                 md reg   r/m   bound rm            
+0000111110111100         11 reg1  reg2  bsf rp              
+0000111110111100         md reg   r/m   bsf rm              
+0000111110111101         11 reg1  reg2  bsr rp              
+0000111110111101         md reg   r/m   bsr rm              
+0000111111001reg                        bswap               
+0000111110111010         11 100   reg   bt r8               
+0000111110111010         md 100   r/m   bt m8               
+0000111110100011         11 reg2  reg1  bt rp               
+0000111110100011         md reg   r/m   bt mr               
+0000111110111010         11 111   reg   btc r8              
+0000111110111010         md 111   r/m   btc m8              
+0000111110111011         11 reg2  reg1  btc rp              
+0000111110111011         md reg   r/m   btc mr              
+0000111110111010         11 110   reg   btr r8              
+0000111110111010         md 110   r/m   btr m8              
+0000111110110011         11 reg2  reg1  btr rp              
+0000111110110011         md reg   r/m   btr mr              
+0000111110111010         11 101   reg   bts r8              
+0000111110111010         md 101   r/m   bts m8              
+0000111110101011         11 reg2  reg1  bts rp              
+0000111110101011         md reg   r/m   bts mr              
+11101000                                call i              
+11111111                 11 010   reg   call r              
+11111111                 md 010   r/m   call m              
+10011000                                cbw                 
+10011001                                cdq                 
+11111000                                clc                 
+11111100                                cld                 
+11111010                                cli                 
+0000111100000110                        clts                
+11110101                                cmc                 
+001110dw                 11 reg1  reg2  cmp rp              
+001110dw                 md reg   r/m   cmp rm              
+001110dw                 11 reg1  reg2  cmp rp              
+001110dw                 md reg   r/m   cmp mr              
+100000sw                 11 111   reg   cmp ri              
+0011110w                                cmp ai              
+100000sw                 md 111   r/m   cmp mi              
+000011111011000w         11 reg2  reg1  cmpxchg             
+000011111011000w         md reg   r/m   cmpxchg rm          
+0000111110100010                        cpuid               
+10011001                 cwd            cwd                 
+10011000                                cwde                
+00100111                                daa                 
+00101111                                das                 
+1111111w                 11 001   reg   dec r               
+01001reg                                dec r               
+1111111w                 md 001   r/m   dec m               
+1111011w                 11 110   reg   div r               
+1111011w                 md 110   r/m   div m               
+11110100                                hlt                 
+1111011w                 11 111   reg   idiv r              
+1111011w                 md 111   r/m   idiv m              
+1110010w                                in a8               
+1111111w                 11 000   reg   inc r               
+01000reg                                inc r               
+11001101                                int 8               
+11001100                                int3                
+11001110                                into                
+0000111100001000                        invd                
+0000111100000001         md 111   r/m   invlpg m            
+11001111                                iret                
+0111tttn                                j 8t                
+000011111000tttn                        j it                
+10010000                                nop                 
+11100011                                j 8j                
+11101011                                jmp 8               
+11101001                                jmp i               
+11111111                 11 100   reg   jmp r               
+11111111                 md 100   r/m   jmp m               
+10011111                                lahf                
+0000111100000010         11 reg1  reg2  lar rp              
+0000111100000010         md reg   r/m   lar rm              
+11000101                 md reg   r/m   lds m               
+10001101                 md reg   r/m   lea m               
+11001001                                leave               
+11000100                 md reg   r/m   les m               
+0000111110110100         md reg   r/m   lfs m               
+0000111100000001         md 010   r/m   lgdt m              
+0000111110110101         md reg   r/m   lgs m               
+0000111100000001         md 011   r/m   lidt m              
+0000111100000000         11 010   reg   lldt r              
+0000111100000000         md 010   r/m   lldt m              
+0000111100000001         11 110   reg   lmsw r              
+0000111100000001         md 110   r/m   lmsw m              
+11100010                                loop 8              
+11100001                                loopz 8             
+11100000                                loopnz 8            
+0000111100000011         11 reg1  reg2  lsl rp              
+0000111100000011         md reg   r/m   lsl m               
+0000111110110010         md reg   r/m   lss m               
+0000111100000000         11 011   reg   ltr r               
+0000111100000000         md 011   r/m   ltr m               
+100010dw                 11 reg1  reg2  mov rp              
+100010dw                 md reg   r/m   mov rm              
+1100011w                 11 000   reg   mov ri              
+1011wreg                                mov ri              
+1100011w                 md 000   r/m   mov mi              
+00001111001110001111000w md reg   r/m   movbe rm            
+000011111011111w         md reg   r/m   movsx rm            
+000011111011011w         11 reg1  reg2  movzx rp            
+000011111011011w         md reg   r/m   movzx rm            
+1111011w                 11 100   reg   mul ar              
+1111011w                 md 100   r/m   mul am              
+1111011w                 11 011   reg   neg r               
+1111011w                 md 011   r/m   neg m               
+0000111100011111         11 000   reg   nop r               
+0000111100011111         md 000   r/m   nop m               
+1111011w                 11 010   reg   not r               
+1111011w                 md 010   r/m   not m               
+000010dw                 11 reg1  reg2  or rp               
+000010dw                 md reg   r/m   or rm               
+100000sw                 11 001   reg   or ri               
+0000110w                                or ai               
+100000sw                 md 001   r/m   or mi               
+1110011w                                out 8a              
+10001111                 11 000   reg   pop r               
+01011reg                                pop r               
+10001111                 md 000   r/m   pop m               
+01100001                                popa f              
+10011101                                popf f              
+11111111                 11 110   reg   push r              
+01010reg                                push r              
+11111111                 md 110   r/m   push m              
+011010s0                                push i              
+01100000                                pusha f             
+10011100                                pushf f             
+1101000w                 11 010   reg   rcl r1              
+1101000w                 md 010   r/m   rcl m1              
+1101001w                 11 010   reg   rcl rb              
+1101001w                 md 010   r/m   rcl mb              
+1100000w                 11 010   reg   rcl r8              
+1100000w                 md 010   r/m   rcl m8              
+1101000w                 11 011   reg   rcr r1              
+1101000w                 md 011   r/m   rcr m1              
+1101001w                 11 011   reg   rcr rb              
+1101001w                 md 011   r/m   rcr mb              
+1100000w                 11 011   reg   rcr r8              
+1100000w                 md 011   r/m   rcr m8              
+0000111100110010                        rdmsr               
+0000111100110011                        rdpmc               
+0000111100110001                        rdtsc               
+000011110000000111111001                rdtscp              
+11000011                                ret                 
+1101000w                 11 000   reg   rol r1              
+1101000w                 md 000   r/m   rol m1              
+1101001w                 11 000   reg   rol rb              
+1101001w                 md 000   r/m   rol mb              
+1100000w                 11 000   reg   rol r8              
+1100000w                 md 000   r/m   rol m8              
+0000111110101010                        rsm                 
+10011110                                sahf                
+1101000w                 11 111   reg   sar r1              
+1101000w                 md 111   r/m   sar m1              
+1101001w                 11 111   reg   sar rb              
+1101001w                 md 111   r/m   sar mb              
+1100000w                 11 111   reg   sar r8              
+1100000w                 md 111   r/m   sar m8              
+000110dw                 11 reg1  reg2  sbb rp              
+000110dw                 md reg   r/m   sbb rm              
+100000sw                 11 011   reg   sbb ri              
+0001110w                                sbb ai              
+100000sw                 md 011   r/m   sbb mi              
+0000111100000001         md 000   r/m   sgdt m              
+1101000w                 11 100   reg   shl r1              
+1101000w                 md 100   r/m   shl m1              
+1101001w                 11 100   reg   shl rb              
+1101001w                 md 100   r/m   shl mb              
+1100000w                 11 100   reg   shl r8              
+1100000w                 md 100   r/m   shl m8              
+0000111110100100         11 reg2  reg1  shld r8             
+0000111110100100         md reg   r/m   shld m8             
+0000111110100101         11 reg2  reg1  shld rb             
+0000111110100101         md reg   r/m   shld mb             
+1101000w                 11 101   reg   shr r1              
+1101000w                 md 101   r/m   shr m1              
+1101001w                 11 101   reg   shr rb              
+1101001w                 md 101   r/m   shr mb              
+1100000w                 11 101   reg   shr r8              
+1100000w                 md 101   r/m   shr m8              
+0000111110101100         11 reg2  reg1  shrd r8             
+0000111110101100         md reg   r/m   shrd m8             
+0000111110101101         11 reg2  reg1  shrd rb             
+0000111110101101         md reg   r/m   shrd mb             
+0000111100000001         md 001   r/m   sidt m              
+0000111100000000         11 000   reg   sldt r              
+0000111100000000         md 000   r/m   sldt m              
+0000111100000001         11 100   reg   smsw r              
+0000111100000001         md 100   r/m   smsw m              
+11111001                                stc                 
+11111101                                std                 
+11111011                                sti                 
+0000111100000000         11 001   reg   str r               
+0000111100000000         md 001   r/m   str m               
+001010dw                 11 reg1  reg2  sub rp              
+001010dw                 md reg   r/m   sub rm              
+100000sw                 11 101   reg   sub ri              
+0010110w                                sub ai              
+100000sw                 md 101   r/m   sub mi              
+1000010w                 11 reg1  reg2  test rp             
+1000010w                 md reg   r/m   test rm             
+1111011w                 11 000   reg   test ri             
+1010100w                                test ai             
+1111011w                 md 000   r/m   test mi             
+0000111100000000         11 100   reg   verr r              
+0000111100000000         md 100   r/m   verr m              
+0000111100000000         11 101   r/m   verw r              
+0000111100000000         md 101   r/m   verw m              
+10011011                                wait                
+0000111100001001                        wbinvd              
+0000111100110000                        wrmsr               
+000011111100000w         11 reg2  reg1  xadd rp             
+000011111100000w         md reg   r/m   xadd rm             
+1000011w                 11 reg1  reg2  xchg rp             
+10010reg                                xchg ra             
+1000011w                 md reg   r/m   xchg rm             
+11010111                                xlat x              
+001100dw                 11 reg1  reg2  xor rp              
+001100dw                 md reg   r/m   xor rm              
+100000sw                 11 110   reg   xor ri              
+0011010w                                xor ai              
+100000sw                 md 100   r/m   xor mi              
+1111011w                 11 101   reg   imul ar             
+1111011w                 md 101   reg   imul am             
+0000111110101111         11 reg1  reg2  imul rp             
+000011111010             1  1     1     1                   
+0000111110101111         md reg   r/m   imul rm             
+011010s1                 11 reg1  reg2  imul pri            
+011010s1                 md reg   r/m   imul rmi            
+11000010                                ret 6               
+11001010                                retf 6              
+00001111001000d0         md eee   reg   mov cr              
+00001111001000d1         md eee   reg   mov dr              
+100011d0                 11 sreg3 reg   mov sr              
+100011d0                 md sreg3 r/m   mov sm              
+1110110w                                in av               
+1110111w                                out va              
+0000111100000001         11 111   reg   invlpg r            
+0000111100001011                        ud2                 
+000011111001tttn         11 000   reg   set rt              
+000011111001tttn         md 000   r/m   set mt              
+1010011w                                cmps ::q            
+1010110w                                lods ::q            
+1010010w                                movs ::q            
+1010111w                                scas ::q            
+1010101w                                stos ::q            
+11101010                                jmp g               
+10011010                                call g              
+11101010                                jmp g               
+0110111w                                outs vu             
+0110110w                                ins uv              
+101000dw                                mov ha              
+11111111                 md 101   r/m   jmp mk              
+11111111                 md 011   r/m   call mk             
