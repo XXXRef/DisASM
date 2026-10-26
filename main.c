@@ -41,6 +41,71 @@
 #define FILEPATH_OPCODES "opcodes.txt" //TODO TEXT("opcodes.txt")
 
 //====================================================================================================
+void SCommand_Init(SCommand* i_pObjCommand)
+{
+	int idxOpcodeByte = 0;
+
+	i_pObjCommand->prefix.prefixcount = 0;
+	i_pObjCommand->prefix.p = NULL;
+	i_pObjCommand->prefix.lnr = 255; //TODO values in hex representation
+	i_pObjCommand->prefix.segr = 255;
+	i_pObjCommand->prefix.opr = 255;
+	i_pObjCommand->prefix.sr = 255;
+
+	i_pObjCommand->opcode.bytenum = 0;
+	i_pObjCommand->opcode.bytes = (char*)malloc(25); //24 bits + 0
+	for (; idxOpcodeByte < 25; ++idxOpcodeByte) {
+		i_pObjCommand->opcode.bytes[idxOpcodeByte] = 0;
+	}
+
+	i_pObjCommand->opcode.hex_bytes = (char*)malloc(3);
+
+	i_pObjCommand->sf.w = -128;
+	i_pObjCommand->sf.s = -128;
+	i_pObjCommand->sf.d = -128;
+	i_pObjCommand->sf.uuu = -128;
+	i_pObjCommand->sf.ff = -128;
+	i_pObjCommand->sf.reg = -128;
+	i_pObjCommand->sf.eee = -128;
+	i_pObjCommand->sf.tttn = -128;
+
+	i_pObjCommand->modrm.mod = -128;
+	i_pObjCommand->modrm.reg = -128;
+	i_pObjCommand->modrm.rm = -128;
+
+	i_pObjCommand->sib.scale = -128;
+	i_pObjCommand->sib.index = -128;
+	i_pObjCommand->sib.base = -128;
+	i_pObjCommand->sib.sib = 255;
+
+	i_pObjCommand->com_text = NULL;
+	i_pObjCommand->parameters = NULL;
+	i_pObjCommand->par = NULL;
+	i_pObjCommand->par_count = 0;
+	return;
+}
+
+//====================================================================================================
+void SCommand_Destroy(SCommand* i_pObjCommand)
+{
+	int idxParam = 0;
+	int parameter_count = i_pObjCommand->par == NULL ? 0 : (int)strlen(i_pObjCommand->par);
+	if (i_pObjCommand->parameters != NULL) {
+		while (idxParam < parameter_count) {
+			free(i_pObjCommand->parameters[idxParam]);
+			++idxParam;
+		}
+		free(i_pObjCommand->parameters);
+	}
+	free(i_pObjCommand->prefix.p);
+	free(i_pObjCommand->opcode.bytes);
+	free(i_pObjCommand->opcode.hex_bytes);
+	free(i_pObjCommand->com_text);
+	free(i_pObjCommand->par);
+	memset(i_pObjCommand, 0, sizeof(*i_pObjCommand));
+}
+
+//====================================================================================================
 char* SByte2Char(UByte*bp){
 	char*mp;
 	mp=(char*)malloc(9);//mem allocating
@@ -298,7 +363,7 @@ int GetCommand(SCommand*cp,FILE*i_hFileTargetPE){
 	unsigned char buf,buf2;
 	
 	//printf("Begin GetCommand:\n");
-	SCommandInit(cp);
+
 
 	if((hFileOpcodes=fopen(FILEPATH_OPCODES,"rb"))==0){
 		printf("\tError: cant open \"%s\"\n", FILEPATH_OPCODES);
@@ -2118,36 +2183,60 @@ IMAGE_SECTION_HEADER findCodeSection(FILE* hFile) {
 //====================================================================================================
 static int ExecDisassemble(FILE* i_hFileTargetPE, FILE* i_hFileDisassembly)
 {
-	SCommand command;
+	SCommand objCommand;
 	IMAGE_SECTION_HEADER sSection;
 	unsigned idxCmdParam;
-	int resGetCommand;
+	int nRes = RET_SUCCESS;
+	long sectionEnd;
+	long filePos;
+	int numAvailableBytes;
 
 	sSection = findCodeSection(i_hFileTargetPE);
 	fseek(i_hFileTargetPE, sSection.PointerToRawData, SEEK_SET);
+	sectionEnd = (long)sSection.PointerToRawData + sSection.SizeOfRawData;
+	
 
-	while ((resGetCommand = GetCommand(&command, i_hFileTargetPE)) == RET_SUCCESS &&
-		   ftell(i_hFileTargetPE) < (sSection.PointerToRawData + sSection.SizeOfRawData)) {
+	while ((filePos = ftell(i_hFileTargetPE)) >= 0 &&
+		filePos < sectionEnd) {
+		numAvailableBytes = (sectionEnd - filePos > MAX_COMMAND_LEN) ? MAX_COMMAND_LEN : (int)(sectionEnd - filePos);
 
-		if (fprintf(i_hFileDisassembly, "%s", command.com_text) < 0) {
-			return ERR_FILE_OPERATION;
+		SCommand_Init(&objCommand);
+		nRes = GetCommand(&objCommand, i_hFileTargetPE, numAvailableBytes);
+		if (nRes != RET_SUCCESS) {
+			nRes = 1;
+			break;
+		}
+
+		if (fprintf(i_hFileDisassembly, "%s", objCommand.com_text) < 0) {
+			nRes = ERR_FILE_OPERATION;
+			break;
 		}
 
 		idxCmdParam = 0;
-		while (idxCmdParam < command.par_count) {
-			if (fprintf(i_hFileDisassembly, (idxCmdParam) ? ", %s" : " %s", command.parameters[idxCmdParam]) < 0) {
-				return ERR_FILE_OPERATION;
+		while (idxCmdParam < objCommand.par_count) {
+			if (fprintf(i_hFileDisassembly, (idxCmdParam) ? ", %s" : " %s", objCommand.parameters[idxCmdParam]) < 0) {
+				nRes = ERR_FILE_OPERATION;
+				goto LABEL_PARSING_LOOP_END;
 			}
 
 			++idxCmdParam;
 		}
 
 		if (fprintf(i_hFileDisassembly, "\n") < 0) {
-			return ERR_FILE_OPERATION;
+			nRes = ERR_FILE_OPERATION;
+			break;
 		}
+
+		SCommand_Destroy(&objCommand);
 	}
 
-	if (resGetCommand != RET_SUCCESS && resGetCommand != RET_FILE_END) {
+LABEL_PARSING_LOOP_END:
+	if (RET_SUCCESS!=nRes) {
+		SCommand_Destroy(&objCommand);
+	}
+
+	if (filePos < 0 || (filePos < sectionEnd &&
+		nRes != RET_SUCCESS)) {
 		fprintf(stderr, "[ERROR] Failed to disassemble target PE file.\n");
 		return ERR_FILE_OPERATION;
 	}
