@@ -38,6 +38,8 @@
 #define MODRM_FIELD_OFFSET 25
 #define DESCRIPTION_FIELD_OFFSET 40
 
+#define FILEPATH_OPCODES "opcodes.txt" //TODO TEXT("opcodes.txt")
+
 //====================================================================================================
 char* SByte2Char(UByte*bp){
 	char*mp;
@@ -288,7 +290,7 @@ void Print(const SCommand*cp){
 }
 
 //====================================================================================================
-int GetCommand(SCommand*cp,FILE*hFile){
+int GetCommand(SCommand*cp,FILE*i_hFileTargetPE){
 	UByte temp_byte;
 	FILE*hFileOpcodes;
 	int bytecounter=0,temp_int,ext_len=0,counter=0,com_len,com_len1;
@@ -298,12 +300,12 @@ int GetCommand(SCommand*cp,FILE*hFile){
 	//printf("Begin GetCommand:\n");
 	SCommandInit(cp);
 
-	if((hFileOpcodes=fopen("res/opcodes.ttt","rb"))==0){
-		printf("\tError: cant open \"opcodes.ttt\"\n");
+	if((hFileOpcodes=fopen(FILEPATH_OPCODES,"rb"))==0){
+		printf("\tError: cant open \"%s\"\n", FILEPATH_OPCODES);
 		return RET_ERROR;
 	}
 	mp=(unsigned char*)malloc(MAX_COMMAND_LEN);//mem allocating
-	com_len1=fread(mp,1,MAX_COMMAND_LEN,hFile);//reading data block, !file pointer+=MAX_COMMAND_LEN!
+	com_len1=fread(mp,1,MAX_COMMAND_LEN,i_hFileTargetPE);//reading data block, !file pointer+=MAX_COMMAND_LEN!
 	
 	if(com_len1==0){//file end
 		return RET_FILE_END;
@@ -2072,7 +2074,7 @@ break;
 	}
 	//-----------------------------------------------operands parsing----------------------------------------------------------------------------------------------------------------------------------------------------------	
 	
-	fseek(hFile,ftell(hFile)-com_len1+bytecounter,SEEK_SET);
+	fseek(i_hFileTargetPE,ftell(i_hFileTargetPE)-com_len1+bytecounter,SEEK_SET);
 	fclose(hFileOpcodes);
 	return RET_SUCCESS;
 }
