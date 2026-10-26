@@ -2080,19 +2080,7 @@ break;
 }
 
 //====================================================================================================
-char*CharEnter(){
-	char*res=NULL;
-	int i=0;
-	do{
-		i++;
-		res=(char*)realloc(res,i);
-		res[i-1]=(char)getchar();
-	}while(res[i-1]!='\n');
-	res[i-1]=0;
-	return res;
-}
-
-//====================================================================================================
+IMAGE_SECTION_HEADER findCodeSection(FILE* i_hFileTargetPE) {
 IMAGE_SECTION_HEADER findCodeSection(FILE* hFile) {
 	//TODO findCodeSection should return code section file offset and file size, not IMAGE_SECTION_HEADER
 	//Search code section by AddressOfEntryPoint value
@@ -2102,22 +2090,22 @@ IMAGE_SECTION_HEADER findCodeSection(FILE* hFile) {
 	WORD NumberOfSections;
 	DWORD AddressOfEntryPoint;
 	int i = 0;
-	fseek(hFile, 0x3c, SEEK_SET);
-	fread(&int_buf, 4, 1, hFile); //'PE' offset in int_buf
+	fseek(i_hFileTargetPE, 0x3c, SEEK_SET);
+	fread(&int_buf, 4, 1, i_hFileTargetPE); //'PE' offset in int_buf
 	//printf("e_lfanew=%#x\n",int_buf);
-	fseek(hFile, int_buf + 6, SEEK_SET);//fp on NumberOfSections
-	fread(&NumberOfSections, 2, 1, hFile);
+	fseek(i_hFileTargetPE, int_buf + 6, SEEK_SET);//fp on NumberOfSections
+	fread(&NumberOfSections, 2, 1, i_hFileTargetPE);
 	//int_buf=int_buf+sizeof(IMAGE_FILE_HEADER);//fp on SizeOfOptionalHeader-int_buf+sizeof(IMAGE_FILE_HEADER)+4/*'PE'*/-4/*2 positions back in IMAGE_FILE_HEADER*/
-	fseek(hFile, int_buf + sizeof(IMAGE_FILE_HEADER), SEEK_SET);
-	fread(&word_buf, 2, 1, hFile);//SizeOfOptionalHeader in word_buf
+	fseek(i_hFileTargetPE, int_buf + sizeof(IMAGE_FILE_HEADER), SEEK_SET);
+	fread(&word_buf, 2, 1, i_hFileTargetPE);//SizeOfOptionalHeader in word_buf
 	printf("SizeOfOptionalHeader=0x%04x\n", word_buf);
-	fseek(hFile, 18, SEEK_CUR);//fp on AddressOfEntryPoint
-	fread(&AddressOfEntryPoint, 4, 1, hFile);
+	fseek(i_hFileTargetPE, 18, SEEK_CUR);//fp on AddressOfEntryPoint
+	fread(&AddressOfEntryPoint, 4, 1, i_hFileTargetPE);
 	printf("AddressOfEntryPoint=0x%08x\n", AddressOfEntryPoint);
 	printf("NumberOfSections=0x%04x\n", NumberOfSections);
-	fseek(hFile, word_buf - 20, SEEK_CUR);//fp on 1st section
+	fseek(i_hFileTargetPE, word_buf - 20, SEEK_CUR);//fp on 1st section
 	while (i != NumberOfSections) {
-		fread(&res, sizeof(IMAGE_SECTION_HEADER), 1, hFile);
+		fread(&res, sizeof(IMAGE_SECTION_HEADER), 1, i_hFileTargetPE);
 		if ((AddressOfEntryPoint >= res.VirtualAddress) && (AddressOfEntryPoint < (res.VirtualAddress + res.Misc.VirtualSize))) {
 			return res;
 		}
