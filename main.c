@@ -25,6 +25,9 @@
 
 #define MAX_COMMAND_LEN 15
 
+// Platform abstraction defines
+#define ERR_INVALID_ARGS	ERROR_BAD_ARGUMENTS
+#define ERR_FILE_OPERATION	ERROR_FILE_INVALID
 #define RET_SUCCESS 0
 #define RET_ERROR 1
 #define RET_FILE_END 2
@@ -2123,49 +2126,83 @@ IMAGE_SECTION_HEADER findCodeSection(FILE* hFile) {
 }
 
 //====================================================================================================
-int main(){
-	FILE*hFile;
+static int ExecDisassemble(FILE* i_hFileTargetPE, FILE* i_hFileDisassembly)
+{
 	SCommand command;
-	char*path;
 	IMAGE_SECTION_HEADER sSection;
 	unsigned idxCmdParam;
-	
-	printf("Enter path: ");//opening file
-	path=CharEnter();
-	printf("\tTarget PE: %s\n",path);
-	
-	if((hFile=fopen(path,"rb"))==0){
-		printf("Error: opening file failed.\n");
-		free(path);
-		getch();
-		return 1;
-	}
-	
-	//Multiple code sections can exist
-	sSection=findCodeSection(hFile);
-	
-	fseek(hFile,sSection.PointerToRawData,SEEK_SET);
-	
-	// Instructions-parsing loop
-	while (GetCommand(&command,hFileTargetPE) == RET_SUCCESS &&
-		   ftell(hFileTargetPE) < (sSection.PointerToRawData+sSection.SizeOfRawData)) {
+	int resGetCommand;
 
-		printf("%s",command.com_text);
+	sSection = findCodeSection(i_hFileTargetPE);
+	fseek(i_hFileTargetPE, sSection.PointerToRawData, SEEK_SET);
+
+	while ((resGetCommand = GetCommand(&command, i_hFileTargetPE)) == RET_SUCCESS &&
+		   ftell(i_hFileTargetPE) < (sSection.PointerToRawData + sSection.SizeOfRawData)) {
+
+		if (fprintf(i_hFileDisassembly, "%s", command.com_text) < 0) {
+			return ERR_FILE_OPERATION;
+		}
 
 		idxCmdParam = 0;
 		while (idxCmdParam < command.par_count) {
-			printf((idxCmdParam) ? ", %s" :" %s",
-				command.parameters[idxCmdParam]);
+			if (fprintf(i_hFileDisassembly, (idxCmdParam) ? ", %s" : " %s", command.parameters[idxCmdParam]) < 0) {
+				return ERR_FILE_OPERATION;
+			}
 
 			++idxCmdParam;
 		}
 
-		printf("\n");
+		if (fprintf(i_hFileDisassembly, "\n") < 0) {
+			return ERR_FILE_OPERATION;
+		}
+	}
+
+	if (resGetCommand != RET_SUCCESS && resGetCommand != RET_FILE_END) {
+		fprintf(stderr, "[ERROR] Failed to disassemble target PE file.\n");
+		return ERR_FILE_OPERATION;
+	}
+
+	return RET_SUCCESS;
+}
+
+//====================================================================================================
+int main(int i_nArgc, char* i_ppArgv[])
+{
+	FILE* i_hFileTargetPE;
+	FILE* i_hFileDisassembly = stdout;
+	int result;
+	
+	// Parse cmd args
+	if (i_nArgc < 2 || i_nArgc > 3) {
+		printf("Usage: %s <target pe file path> [output disassembly txt file]\n",
+			i_nArgc > 0 ? i_ppArgv[0] : "DisAsm");
+		return ERR_INVALID_ARGS;
+	}
+
+	if ((i_hFileTargetPE = fopen(i_ppArgv[1], "rb")) == NULL) {
+		printf("[ERROR] opening target PE file failed: %s\n", i_ppArgv[1]);
+		return ERR_FILE_OPERATION;
+	}
+
+	if (i_nArgc == 3) {
+		i_hFileDisassembly = fopen(i_ppArgv[2], "w");
+		if (i_hFileDisassembly == NULL) {
+			printf("[ERROR] opening output file failed : %s\n", i_ppArgv[2]);
+			fclose(i_hFileTargetPE);
+			return ERR_FILE_OPERATION;
+		}
+	}
+
+	// Perform disassembling
+	result = ExecDisassemble(i_hFileTargetPE, i_hFileDisassembly);
+
+	// Cleanup
+	fclose(i_hFileTargetPE);
+	if (i_hFileDisassembly != stdout &&
+		fclose(i_hFileDisassembly) != 0) {
+		printf("[ERROR] writing output file failed: %s\n", i_ppArgv[2]);
+		return ERR_FILE_OPERATION;
 	}
 	
-	fclose(hFile);
-	free(path);
-	getch();
-	
-	return 0;
+	return result;
 }
