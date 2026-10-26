@@ -248,7 +248,7 @@ int FindCommand(FILE*f,char*p,char*modrm){
 }
 
 //====================================================================================================
-int ParsePrefixes(SCommand*cp,const unsigned char*mp,int count){
+int SCommand_ParsePrefixes(SCommand*cp,const unsigned char*mp,int count){
 	char buf=0;
 	int bytecounter=0;
 	while(bytecounter<count){
@@ -355,7 +355,7 @@ void Print(const SCommand*cp){
 }
 
 //====================================================================================================
-int GetCommand(SCommand*cp,FILE*i_hFileTargetPE){
+int SCommand_GetCommand(SCommand*cp,FILE*i_hFileTargetPE){
 	UByte temp_byte;
 	FILE*hFileOpcodes;
 	int bytecounter=0,temp_int,ext_len=0,counter=0,com_len,com_len1;
@@ -378,7 +378,7 @@ int GetCommand(SCommand*cp,FILE*i_hFileTargetPE){
 	
 	//printf("\"prefixes.ttt\" opened\n");
 	/*------------------------------------------------------------prefix parsing------------------------------------------------------*/
-	if(ParsePrefixes(cp,mp,com_len1)==RET_ERROR){
+	if(SCommand_ParsePrefixes(cp,mp,com_len1)==RET_ERROR){
 		printf("\tError: invalid command\n");
 		return RET_ERROR;
 	}
@@ -2201,7 +2201,7 @@ static int ExecDisassemble(FILE* i_hFileTargetPE, FILE* i_hFileDisassembly)
 		numAvailableBytes = (sectionEnd - filePos > MAX_COMMAND_LEN) ? MAX_COMMAND_LEN : (int)(sectionEnd - filePos);
 
 		SCommand_Init(&objCommand);
-		nRes = GetCommand(&objCommand, i_hFileTargetPE, numAvailableBytes);
+		nRes = SCommand_GetCommand(&objCommand, i_hFileTargetPE, numAvailableBytes);
 		if (nRes != RET_SUCCESS) {
 			nRes = 1;
 			break;
