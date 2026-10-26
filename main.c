@@ -2126,9 +2126,9 @@ IMAGE_SECTION_HEADER findCodeSection(FILE* hFile) {
 int main(){
 	FILE*hFile;
 	SCommand command;
-	int i=1;
 	char*path;
 	IMAGE_SECTION_HEADER sSection;
+	unsigned idxCmdParam;
 	
 	printf("Enter path: ");//opening file
 	path=CharEnter();
@@ -2146,15 +2146,20 @@ int main(){
 	
 	fseek(hFile,sSection.PointerToRawData,SEEK_SET);
 	
-	while((GetCommand(&command,hFile)==RET_SUCCESS)&&(ftell(hFile)<(sSection.PointerToRawData+sSection.SizeOfRawData))){
+	// Instructions-parsing loop
+	while (GetCommand(&command,hFileTargetPE) == RET_SUCCESS &&
+		   ftell(hFileTargetPE) < (sSection.PointerToRawData+sSection.SizeOfRawData)) {
+
 		printf("%s",command.com_text);
-		if(command.par_count!=0){
-			printf(" %s",command.parameters[0]);
+
+		idxCmdParam = 0;
+		while (idxCmdParam < command.par_count) {
+			printf((idxCmdParam) ? ", %s" :" %s",
+				command.parameters[idxCmdParam]);
+
+			++idxCmdParam;
 		}
-		while(i<command.par_count){
-			printf(", %s",command.parameters[i]);
-			i++;
-		}
+
 		printf("\n");
 	}
 	
