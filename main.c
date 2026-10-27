@@ -215,7 +215,7 @@ int findCommand(FILE* i_hOpcodeFile,const char* i_strOpcodeBits, char* i_strModr
 					}
 				}
 				fseek(i_hOpcodeFile,ftell(i_hOpcodeFile)-3,SEEK_SET);
-				idxOpcode++;
+				++idxOpcode;
 			}
 			
 			if (nBufferByte=='u'){//uuu-sreg3 //pop s
@@ -229,8 +229,7 @@ int findCommand(FILE* i_hOpcodeFile,const char* i_strOpcodeBits, char* i_strModr
 				idxOpcode+=2;
 			}
 			
-			
-			idxOpcode++;
+			++idxOpcode;
 		}
 		idxTextOffset+=LINE_LEN;
 		while (1){//comments
@@ -290,10 +289,10 @@ int SCommand_ParsePrefixes(SCommand* o_pCommand,const unsigned char* i_pBytes,in
 		if (nBufferByte==1){//exit
 			break;
 		}
-		o_pCommand->m_objPrefix.m_nPrefixCount++;
+		++o_pCommand->m_objPrefix.m_nPrefixCount;
 		o_pCommand->m_objPrefix.m_pBytes=(unsigned char*)realloc(o_pCommand->m_objPrefix.m_pBytes,o_pCommand->m_objPrefix.m_nPrefixCount);
 		o_pCommand->m_objPrefix.m_pBytes[o_pCommand->m_objPrefix.m_nPrefixCount-1]=i_pBytes[idxByte];
-		idxByte++;
+		++idxByte;
 	}
 	if (idxByte==i_nByteCount){
 		return RET_ERROR;
@@ -403,9 +402,9 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 		strBitString=convertByteToBitString(&objTempByte);
 		strcpy(o_pCommand->m_objOpcode.m_strBits+nBufferByte*8,strBitString);
 		o_pCommand->m_objOpcode.m_pHexBytes[nBufferByte]=pBytes[idxByte];
-		o_pCommand->m_objOpcode.m_nByteNum++;
+		++o_pCommand->m_objOpcode.m_nByteNum;
 		free(strBitString);
-		idxByte++;
+		++idxByte;
 		objTempByte.m_nByte=pBytes[idxByte];//possible modrm
 		strBitString=convertByteToBitString(&objTempByte);
 #ifdef _DEBUG
@@ -414,7 +413,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 		if ((nCommandOffset=findCommand(hOpcodeFile,o_pCommand->m_objOpcode.m_strBits,strBitString))!=-1){//command found
 			break;//we can exit, buf<4
 		}
-		nBufferByte++;
+		++nBufferByte;
 	}
 	
 	if (nBufferByte==3){//command not found
@@ -497,7 +496,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 		o_pCommand->m_objModrm.m_nMod=(strBitString[0]-'0')*2+(strBitString[1]-'0');
 		o_pCommand->m_objModrm.m_nReg=(strBitString[2]-'0')*4+(strBitString[3]-'0')*2+(strBitString[4]-'0');
 		o_pCommand->m_objModrm.m_nRm=(strBitString[5]-'0')*4+(strBitString[6]-'0')*2+(strBitString[7]-'0');
-		idxByte++;
+		++idxByte;
 	}
 	free(strBitString);//temp_char:possible modrm
 #ifdef _DEBUG
@@ -516,7 +515,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 		}
 		o_pCommand->m_strCommandText=(char*)realloc( o_pCommand->m_strCommandText,nExtensionLength+2);
 		o_pCommand->m_strCommandText[nExtensionLength]=nBufferByte;
-		nExtensionLength++;
+		++nExtensionLength;
 	}
 	o_pCommand->m_strCommandText[nExtensionLength]=0;
 #ifdef _DEBUG
@@ -535,8 +534,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 		}
 		
 		o_pCommand->m_strParameters[nExtensionLength]=nBufferByte;
-		o_pCommand->m_nParameterCount++;
-		nExtensionLength++;
+		++o_pCommand->m_nParameterCount;
+		++nExtensionLength;
 	}	
 	o_pCommand->m_strParameters[nExtensionLength]=0;
 	
@@ -553,7 +552,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 	nExtensionLength=0;
 	while (nExtensionLength<o_pCommand->m_nParameterCount){
 		o_pCommand->m_pParameters[nExtensionLength]=(char*)malloc(40);//[eax+ebx*1+0FFFFFFFF],0
-		nExtensionLength++;
+		++nExtensionLength;
 	}
 	//printf("DEBUG");	
 	//-----------------------------------------------operands parsing----------------------------------------------------------------------------------------------------------------------------------------------------------	
@@ -1265,7 +1264,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 					o_pCommand->m_objSib.m_nIndex=pBytes[idxByte]/8-(pBytes[idxByte]/64)*8;
 					o_pCommand->m_objSib.m_nBase=pBytes[idxByte]%8;
 					o_pCommand->m_objSib.m_nSib=pBytes[idxByte];
-					idxByte++;//SIB parsed
+					++idxByte;//SIB parsed
 
 					//cp->parameters[counter][1]='e';
 					switch(o_pCommand->m_objSib.m_nBase){
@@ -1361,7 +1360,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 					
 					while (nExtensionLength < o_pCommand->m_objSib.m_nScale){
 						nBufferByte*=2;
-						nExtensionLength++;
+						++nExtensionLength;
 					}	
 					o_pCommand->m_pParameters[idxOperand][nCommandLength+9]=nBufferByte+'0';
 					nBufferByte=10;
@@ -1382,8 +1381,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0')>9){
 								o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0'-10;
 							}
-							idxByte++;
-							nExtensionLength--;
+							++idxByte;
+							--nExtensionLength;
 						}
 						nBufferByte=9;
 					}else{
@@ -1433,8 +1432,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]-'0')>9){
 								o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]-'0'-10;
 							}
-							idxByte++;
-							nExtensionLength--;
+							++idxByte;
+							--nExtensionLength;
 						}
 					}
 					nBufferByte=nBufferByte+o_pCommand->m_objModrm.m_nMod*o_pCommand->m_objModrm.m_nMod*2+1;
@@ -1506,8 +1505,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0') > 9){
 								o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0'-10;
 							}
-							idxByte++;
-							nExtensionLength--;
+							++idxByte;
+							--nExtensionLength;
 						}
 						nBufferByte=5;
 					}else{
@@ -1579,7 +1578,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 						o_pCommand->m_pParameters[idxOperand][2]='A'+o_pCommand->m_pParameters[idxOperand][2]-'0'-10;
 					}
 					o_pCommand->m_pParameters[idxOperand][3]=0;
-					idxByte++;
+					++idxByte;
 					break;
 				}
 			}else{
@@ -1623,7 +1622,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				o_pCommand->m_pParameters[idxOperand][1]='A'+o_pCommand->m_pParameters[idxOperand][1]-'0'-10;
 			}
 			o_pCommand->m_pParameters[idxOperand][2]=0;
-			idxByte++;
+			++idxByte;
 			break;
 			
 			//16bit immediate----------------------------------------------------------------------------------------------------
@@ -1639,7 +1638,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				if ( (o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]-'0') > 9 ){
 					o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]-'0'-10;
 				}
-				idxByte++;
+				++idxByte;
 			}
 			o_pCommand->m_pParameters[idxOperand][4]=0;
 			break;
@@ -1655,7 +1654,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			o_pCommand->m_nParameterCount--;//tttn is modification, not parameter
 			nExtensionLength=0;
 			while (0 != o_pCommand->m_strCommandText[nExtensionLength]){
-				nExtensionLength++;
+				++nExtensionLength;
 			}
 			o_pCommand->m_strCommandText=(char*)realloc( o_pCommand->m_strCommandText,nExtensionLength+3);//????????? ??? ??????//command + 2 chars + 0
 			//in ext_len position of zero in com_text
@@ -1755,7 +1754,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			o_pCommand->m_nParameterCount--;//modification, not parameter
 			nExtensionLength=0;
 			while (o_pCommand->m_strCommandText[nExtensionLength]!=0){
-				nExtensionLength++;
+				++nExtensionLength;
 			}
 			o_pCommand->m_strCommandText=(char*)realloc( o_pCommand->m_strCommandText,nExtensionLength+2);//????????? ??? ??????//command + 1 char + 0
 			//in ext_len position of zero in com_text
@@ -1775,7 +1774,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 
 			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//0x66
 				o_pCommand->m_strCommandText[1]='e';
-				nExtensionLength++;
+				++nExtensionLength;
 			}
 			o_pCommand->m_strCommandText[nExtensionLength]='c';
 			o_pCommand->m_strCommandText[nExtensionLength+1]='x';
@@ -1849,7 +1848,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			nExtensionLength+=4;
 			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//no 0x67-4byte addr
 				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
-				nExtensionLength++;
+				++nExtensionLength;
 			}
 			if (idxOperand==0){//1st par
 				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='S';
@@ -1885,8 +1884,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				if ((o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]-'0')>9){
 					o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]-'0'-10;
 				}
-				idxByte++;
-				nExtensionLength++;
+				++idxByte;
+				++nExtensionLength;
 				if ((nBufferByte2-nExtensionLength)==2){
 					o_pCommand->m_pParameters[idxOperand][4]=':';
 					nBufferByte=254;
@@ -2019,7 +2018,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			nExtensionLength+=9;
 			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//edi
 				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
-				nExtensionLength++;
+				++nExtensionLength;
 			}
 			
 			o_pCommand->m_pParameters[idxOperand][nExtensionLength]='D';
@@ -2110,8 +2109,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				if ((o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]-'0')>9){
 					o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]='A'+o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]-'0'-10;
 				}
-				idxByte++;
-				nBufferByte--;
+				++idxByte;
+				--nBufferByte;
 			}
 
 			break;
@@ -2142,7 +2141,7 @@ o_pCommand->m_pParameters[0]=strTempText;
 break;
 			
 		}
-		idxOperand++;
+		++idxOperand;
 	}
 	//-----------------------------------------------operands parsing----------------------------------------------------------------------------------------------------------------------------------------------------------	
 	
@@ -2181,7 +2180,7 @@ IMAGE_SECTION_HEADER findCodeSection(FILE* i_hTargetFile)
 		if ((nEntryPointRva >= objSection.VirtualAddress) && (nEntryPointRva < (objSection.VirtualAddress + objSection.Misc.VirtualSize))) {
 			return objSection;
 		}
-		idx++;
+		++idx;
 	}
 	printf("[ERROR] Failed to find code section.\n");
 	return objSection;
