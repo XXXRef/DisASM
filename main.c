@@ -821,13 +821,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				}else{
 					fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+3,SEEK_SET);//fp on mod/opcode section
 					fread(&nBufferByte,1,1,hOpcodeFile);
-					if (nBufferByte=='s'){
-						nExtensionLength=o_pCommand->m_objModrm.m_nReg;
-						//printf("\t\tDEBUG\n");
-					}else{//sreg in rm section
-						nExtensionLength=o_pCommand->m_objModrm.m_nRm;
-						//printf("\t\tDEBUG\n");
-					}
+					nExtensionLength = (nBufferByte == 's') ? o_pCommand->m_objModrm.m_nReg : o_pCommand->m_objModrm.m_nRm;
 				}
 			}
 			//in ext_len number of register
@@ -881,11 +875,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			if (o_pCommand->m_objSpecialFields.m_nW==0){//al
 				strcpy(o_pCommand->m_pParameters[idxOperand], "al");
 			}else{
-				if (o_pCommand->m_objPrefix.m_nOpr==0x66){//ax
-					strcpy(o_pCommand->m_pParameters[idxOperand], "ax");
-				}else{//eax
-					strcpy(o_pCommand->m_pParameters[idxOperand], "eax");
-				}
+				strcpy(o_pCommand->m_pParameters[idxOperand],
+					(o_pCommand->m_objPrefix.m_nOpr == 0x66) ? "ax" : "eax");
 			}
 			break;
 			//------------------------------------------------- cl ---------------------------------------------------			
@@ -900,11 +891,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			}else{
 				fseek(hOpcodeFile,MODRM_FIELD_OFFSET+3,SEEK_SET);
 				fread(&nBufferByte,1,1,hOpcodeFile);
-				if (nBufferByte=='e'){//eee
-					nExtensionLength=o_pCommand->m_objModrm.m_nReg;
-				}else{//in rm field
-					nExtensionLength=o_pCommand->m_objModrm.m_nRm;
-				}
+				nExtensionLength = (nBufferByte == 'e') ? o_pCommand->m_objModrm.m_nReg : o_pCommand->m_objModrm.m_nRm;
 			}
 			switch(nExtensionLength){
 			case 0://dr0
@@ -950,13 +937,9 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			}else{
 				fseek(hOpcodeFile,MODRM_FIELD_OFFSET+3,SEEK_SET);
 				fread(&nBufferByte,1,1,hOpcodeFile);
-				if (nBufferByte=='e'){//eee
-					nExtensionLength=o_pCommand->m_objModrm.m_nReg;
-				}else{//in rm field
-					nExtensionLength=o_pCommand->m_objModrm.m_nRm;
-				}
+				nExtensionLength = (nBufferByte == 'e') ? o_pCommand->m_objModrm.m_nReg : o_pCommand->m_objModrm.m_nRm;
 			}
-			switch(nExtensionLength){
+			switch (nExtensionLength){
 			case 0://cr0
 				strcpy(o_pCommand->m_pParameters[idxOperand], "cr0");
 				break;
@@ -1339,11 +1322,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				}
 			}else{
 				if (o_pCommand->m_objSpecialFields.m_nW == 1){//2,4 byte imm
-					if (o_pCommand->m_objPrefix.m_nOpr == 0x66){//2 bytes imm
-						nExtensionLength =2;
-					}else{//4 bytes imm
-						nExtensionLength=4;
-					}
+					nExtensionLength = (o_pCommand->m_objPrefix.m_nOpr == 0x66) ? 2 : 4;
 				}
 			}
 
@@ -1488,11 +1467,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			}
 			o_pCommand->m_strCommandText=(char*)realloc( o_pCommand->m_strCommandText,nExtensionLength+2);//????????? ??? ??????//command + 1 char + 0
 			//in ext_len position of zero in com_text
-			if (o_pCommand->m_objPrefix.m_nOpr==0x66){//0x66
-				o_pCommand->m_strCommandText[nExtensionLength]='w';
-			}else{//no 0x66
-				o_pCommand->m_strCommandText[nExtensionLength]='d';
-			}
+			o_pCommand->m_strCommandText[nExtensionLength] = (o_pCommand->m_objPrefix.m_nOpr == 0x66) ? 'w' : 'd';
 			o_pCommand->m_strCommandText[nExtensionLength+1]=0;
 			break;
 			
@@ -1561,11 +1536,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
 				++nExtensionLength;
 			}
-			if (idxOperand==0){//1st par
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='S';
-			}else{
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='D';
-			}
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength] = (idxOperand == 0) ? 'S' : 'D';
 			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='I';
 			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]=']';
 			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]=0;
@@ -1578,11 +1549,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			nExtensionLength=0;
 			strcpy(o_pCommand->m_pParameters[idxOperand], "FAR_");
 			o_pCommand->m_pParameters[idxOperand]+=4;
-			if (o_pCommand->m_objPrefix.m_nOpr==0x66){//0x67 present-4433:2211
-				nBufferByte2=4;
-			}else{//6655:44332211
-				nBufferByte2=6;
-			}
+			nBufferByte2 = (o_pCommand->m_objPrefix.m_nOpr == 0x66) ? 4 : 6; //0x67 present-4433:2211 //6655:44332211
 			while (nExtensionLength!=(int)nBufferByte2){
 				o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2-1]=pBytes[idxByte]/16+'0';
 				o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]=pBytes[idxByte]%16+'0';
@@ -1740,11 +1707,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			memcpy(o_pCommand->m_pParameters[idxOperand] + nExtensionLength + 1, "S:[", 3);
 			nExtensionLength+=4;
 
-			if (o_pCommand->m_objPrefix.m_nSr==0x67){//2 bytes imm
-				nBufferByte =2;
-			}else{//4 bytes imm
-				nBufferByte=4;
-			}
+			nBufferByte = (o_pCommand->m_objPrefix.m_nSr == 0x67) ? 2 : 4; // 2/4 bytes imm
 
 			o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2+1]=0;
 			o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2]=']';
@@ -1774,15 +1737,11 @@ nBufferByte=0;//if 0x66 is present
 if (o_pCommand->m_objPrefix.m_nOpr==0x66){
 	nBufferByte=1;
 }
-nExtensionLength=5+nBufferByte+strlen(o_pCommand->m_pParameters[0]);//'FAR '+ strlen(cp->parameters[0]),0
+nExtensionLength=5+nBufferByte+strlen(o_pCommand->m_pParameters[0]);// 'FAR '+ strlen(cp->parameters[0]),0
 strTempText=(char*)malloc(nExtensionLength);
 strTempText[nExtensionLength-1]=0;
 strcpy(strTempText, "FAR_");
-if (o_pCommand->m_objPrefix.m_nOpr==0x66){
-	strTempText[4]='D';//dword
-}else{
-	strTempText[4]='F';//fword
-}
+strTempText[4] = (o_pCommand->m_objPrefix.m_nOpr == 0x66) ? 'D' : 'F'; // dword/fword
 strcpy(strTempText+5,o_pCommand->m_pParameters[0]+1-nBufferByte);
 //printf("\nTEMP_CHAR1=%s\n",temp_char1);
 free(o_pCommand->m_pParameters[0]);
