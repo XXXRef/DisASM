@@ -1006,11 +1006,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				}
 			}
 
-			o_pCommand->m_pParameters[idxOperand][nCommandLength]='_';
-			o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='P';
-			o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='T';
-			o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='R';
-			o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='_';
+			memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength, "_PTR_", 5);
 			nCommandLength+=5;
 
 			switch(o_pCommand->m_objPrefix.m_nSegr){
@@ -1037,35 +1033,28 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				break;
 			}
 
-			o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='S';
-			o_pCommand->m_pParameters[idxOperand][nCommandLength+2]=':';
-			o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='[';
+			memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "S:[", 3);
 			nCommandLength+=3;
 
 			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//0x67 not present
-				o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='e';
 				switch(o_pCommand->m_objModrm.m_nRm){
 				case 0://eax
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='a';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "eax", 3);
 					nBufferByte=4;
 					break;
 					
 				case 1://ecx
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='c';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ecx", 3);
 					nBufferByte=4;
 					break;
 					
 				case 2://edx
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='d';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "edx", 3);
 					nBufferByte=4;
 					break;
 					
 				case 3://ebx
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='b';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ebx", 3);
 					nBufferByte=4;
 					break;
 					
@@ -1076,91 +1065,73 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 					o_pCommand->m_objSib.m_nSib=pBytes[idxByte];
 					++idxByte;//SIB parsed
 
-					//cp->parameters[counter][1]='e';
 					switch(o_pCommand->m_objSib.m_nBase){
 					case 0:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='a';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "eax", 3);
 						break;
 						
 					case 1:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='c';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ecx", 3);
 						break;
 						
 					case 2:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='d';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "edx", 3);
 						break;
 						
 					case 3:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='b';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ebx", 3);
 						break;
 						
 					case 4:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='s';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='p';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "esp", 3);
 						break;
 						
 					case 5://[*]
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='b';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='p';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ebp", 3);
 						break;
 						
 					case 6:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='s';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='i';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "esi", 3);
 						break;
 						
 					case 7:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='d';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='i';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "edi", 3);
 						break;
 					}
 					
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='+';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+5]='e';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 4, "+e", 2);
 					
 					switch(o_pCommand->m_objSib.m_nIndex){
 					case 0:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='a';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='x';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "ax", 2);
 						break;
 						
 					case 1:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='c';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='x';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "cx", 2);
 						break;
 						
 					case 2:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='d';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='x';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "dx", 2);
 						break;
 						
 					case 3:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='b';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='x';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "bx", 2);
 						break;
 						
 					case 4:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='s';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='p';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "sp", 2);
 						break;
 						
 					case 5://[*]
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='b';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='p';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "bp", 2);
 						break;
 						
 					case 6:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='s';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='i';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "si", 2);
 						break;
 						
 					case 7:
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='d';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='i';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "di", 2);
 						break;
 					}
 					
@@ -1196,23 +1167,18 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 						}
 						nBufferByte=9;
 					}else{
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='b';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='p';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ebp", 3);
 						nBufferByte=4;
 					}
 					break;
 					
 				case 6://esi
-					//cp->parameters[counter][1]='e';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='s';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='i';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "esi", 3);
 					nBufferByte=4;
 					break;
 					
 				case 7://edi
-					//cp->parameters[counter][1]='e';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='d';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='i';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "edi", 3);
 					nBufferByte=4;
 					break;	
 				}
@@ -1253,50 +1219,32 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			}else{//0x67 present
 				switch (o_pCommand->m_objModrm.m_nRm){
 				case 0:
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='x';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='+';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='s';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+5]='i';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bx+si", 5);
 					nBufferByte=6;
 					break;
 					
 				case 1:
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='x';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='+';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='d';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+5]='i';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bx+di", 5);
 					nBufferByte=6;
 					break;
 					
 				case 2:
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='p';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='+';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='s';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+5]='i';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bp+si", 5);
 					nBufferByte=6;
 					break;
 					
 				case 3:
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='p';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='+';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='d';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+5]='i';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bp+di", 5);
 					nBufferByte=6;
 					break;
 					
 				case 4:
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='s';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='i';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "si", 2);
 					nBufferByte=3;
 					break;
 					
 				case 5:
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='d';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='i';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "di", 2);
 					nBufferByte=3;
 					break;
 					
@@ -1320,15 +1268,13 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 						}
 						nBufferByte=5;
 					}else{
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='p';
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bp", 2);
 						nBufferByte=3;
 					}
 					break;
 					
 				case 7:
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='x';
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bx", 2);
 					nBufferByte=3;
 					break;
 				}
@@ -1468,91 +1414,67 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			//in ext_len position of zero in com_text
 			switch(o_pCommand->m_objSpecialFields.m_nTttn){
 			case 0://overflow
-				o_pCommand->m_strCommandText[nExtensionLength]='o';
-				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "o");
 				break;
 				
 			case 1://no overflow
-				o_pCommand->m_strCommandText[nExtensionLength]='n';
-				o_pCommand->m_strCommandText[nExtensionLength+1]='o';
-				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "no");
 				break;
 				
 			case 2://below
-				o_pCommand->m_strCommandText[nExtensionLength]='b';
-				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "b");
 				break;
 
 			case 3://not below
-				o_pCommand->m_strCommandText[nExtensionLength]='n';
-				o_pCommand->m_strCommandText[nExtensionLength+1]='b';
-				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "nb");
 				break;
 
 			case 4://zero
-				o_pCommand->m_strCommandText[nExtensionLength]='z';
-				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "z");
 				break;						
 				
 			case 5://not zero
-				o_pCommand->m_strCommandText[nExtensionLength]='n';
-				o_pCommand->m_strCommandText[nExtensionLength+1]='z';
-				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "nz");
 				break;
 				
 			case 6://not above
-				o_pCommand->m_strCommandText[nExtensionLength]='n';
-				o_pCommand->m_strCommandText[nExtensionLength+1]='a';
-				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "na");
 				break;
 				
 			case 7://above
-				o_pCommand->m_strCommandText[nExtensionLength]='a';
-				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "a");
 				break;
 				
 			case 8://sign
-				o_pCommand->m_strCommandText[nExtensionLength]='s';
-				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "s");
 				break;
 				
 			case 9://no sign
-				o_pCommand->m_strCommandText[nExtensionLength]='n';
-				o_pCommand->m_strCommandText[nExtensionLength+1]='s';
-				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "ns");
 				break;
 				
 			case 10://parity
-				o_pCommand->m_strCommandText[nExtensionLength]='p';
-				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "p");
 				break;
 
 			case 11://not parity
-				o_pCommand->m_strCommandText[nExtensionLength]='n';
-				o_pCommand->m_strCommandText[nExtensionLength+1]='p';
-				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "np");
 				break;
 
 			case 12://less
-				o_pCommand->m_strCommandText[nExtensionLength]='l';
-				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "l");
 				break;						
 				
 			case 13://not less
-				o_pCommand->m_strCommandText[nExtensionLength]='n';
-				o_pCommand->m_strCommandText[nExtensionLength+1]='l';
-				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "nl");
 				break;
 				
 			case 14://not greater
-				o_pCommand->m_strCommandText[nExtensionLength]='n';
-				o_pCommand->m_strCommandText[nExtensionLength+1]='g';
-				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "ng");
 				break;
 				
 			case 15://greater
-				o_pCommand->m_strCommandText[nExtensionLength]='g';
-				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
+				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "g");
 				break;
 			}
 			break;
@@ -1584,10 +1506,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				o_pCommand->m_strCommandText[1]='e';
 				++nExtensionLength;
 			}
-			o_pCommand->m_strCommandText[nExtensionLength]='c';
-			o_pCommand->m_strCommandText[nExtensionLength+1]='x';
-			o_pCommand->m_strCommandText[nExtensionLength+2]='z';
-			o_pCommand->m_strCommandText[nExtensionLength+3]=0;
+			strcpy(o_pCommand->m_strCommandText + nExtensionLength, "cxz");
 			break;
 			
 			//':'-DWORD PTR ds:[esi]-DWORD PTR es:[edi]------------------------------------------------------------------------------------
@@ -1605,11 +1524,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				}
 			}
 
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength]='_';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='P';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]='T';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]='R';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+4]='_';
+			memcpy(o_pCommand->m_pParameters[idxOperand] + nExtensionLength, "_PTR_", 5);
 			nExtensionLength+=5;
 
 			if (0==idxOperand){//1st par
@@ -1640,9 +1555,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			}else{
 				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
 			}
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='S';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]=':';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]='[';
+			memcpy(o_pCommand->m_pParameters[idxOperand] + nExtensionLength + 1, "S:[", 3);
 			nExtensionLength+=4;
 			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//no 0x67-4byte addr
 				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
@@ -1715,21 +1628,14 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				break;
 			}
 
-			o_pCommand->m_pParameters[idxOperand][10]='S';
-			o_pCommand->m_pParameters[idxOperand][11]=':';
-			o_pCommand->m_pParameters[idxOperand][12]='[';
+			memcpy(o_pCommand->m_pParameters[idxOperand] + 10, "S:[", 3);
 
 			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//ebx
 				o_pCommand->m_pParameters[idxOperand][13]='E';
 				nExtensionLength=1;
 			}
 
-			o_pCommand->m_pParameters[idxOperand][13+nExtensionLength]='B';
-			o_pCommand->m_pParameters[idxOperand][14+nExtensionLength]='X';
-			o_pCommand->m_pParameters[idxOperand][15+nExtensionLength]='+';
-			o_pCommand->m_pParameters[idxOperand][16+nExtensionLength]='A';
-			o_pCommand->m_pParameters[idxOperand][17+nExtensionLength]='L';
-			o_pCommand->m_pParameters[idxOperand][18+nExtensionLength]=']';
+			memcpy(o_pCommand->m_pParameters[idxOperand] + 13 + nExtensionLength, "BX+AL]", 6);
 			o_pCommand->m_pParameters[idxOperand][19+nExtensionLength]=0;
 			break;
 			
@@ -1776,10 +1682,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			}
 
 			memcpy(o_pCommand->m_pParameters[idxOperand] + nExtensionLength, "_PTR_", 5);
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+5]='E';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+6]='S';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+7]=':';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+8]='[';
+			memcpy(o_pCommand->m_pParameters[idxOperand] + nExtensionLength + 5, "ES:[", 4);
 			nExtensionLength+=9;
 			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//edi
 				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
@@ -1834,9 +1737,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				break;
 			}
 
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='S';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]=':';
-			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]='[';
+			memcpy(o_pCommand->m_pParameters[idxOperand] + nExtensionLength + 1, "S:[", 3);
 			nExtensionLength+=4;
 
 			if (o_pCommand->m_objPrefix.m_nSr==0x67){//2 bytes imm
