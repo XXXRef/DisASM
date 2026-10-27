@@ -19,6 +19,7 @@
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <windows.h>
 
@@ -40,6 +41,62 @@
 #define DESCRIPTION_FIELD_OFFSET 40
 
 #define FILEPATH_OPCODES "opcodes.txt" //TODO TEXT("opcodes.txt")
+
+
+typedef struct
+{
+	unsigned char*	m_pData;
+	size_t			m_nSize;
+} SOpcodesData;
+
+
+static SOpcodesData g_objOpcodesData = { NULL, 0 };
+
+
+static unsigned char readOpcodeByte(size_t* io_pPos)
+{
+	return (*io_pPos >= g_objOpcodesData.m_nSize) ? 0 : g_objOpcodesData.m_pData[(*io_pPos)++];
+}
+
+
+static int loadOpcodeDatabase()
+{
+	FILE* hOpcodeFile;
+	long nOpcodeFileSize;
+	unsigned char* pOpcodeData;
+
+	hOpcodeFile=fopen(FILEPATH_OPCODES,"rb");
+	if (hOpcodeFile==NULL) {
+		fprintf(stderr, "[ERROR] opening opcode database failed: '%s'\n", FILEPATH_OPCODES);
+		return ERR_FILE_OPERATION;
+	}
+	if (fseek(hOpcodeFile,0,SEEK_END)!=0 || (nOpcodeFileSize=ftell(hOpcodeFile))<0 ||
+		fseek(hOpcodeFile,0,SEEK_SET)!=0) {
+		fclose(hOpcodeFile);
+		fprintf(stderr, "[ERROR] reading opcode database failed: '%s'\n", FILEPATH_OPCODES);
+		return ERR_FILE_OPERATION;
+	}
+	pOpcodeData=(unsigned char*)malloc(nOpcodeFileSize == 0 ? 1 : (size_t)nOpcodeFileSize);
+	if (pOpcodeData==NULL) {
+		fclose(hOpcodeFile);
+		fprintf(stderr, "[ERROR] allocating opcode database buffer failed.\n");
+		return RET_ERROR;
+	}
+	if (fread(pOpcodeData,1,(size_t)nOpcodeFileSize,hOpcodeFile)!=(size_t)nOpcodeFileSize) {
+		free(pOpcodeData);
+		fclose(hOpcodeFile);
+		fprintf(stderr, "[ERROR] reading opcode database failed: '%s'\n", FILEPATH_OPCODES);
+		return ERR_FILE_OPERATION;
+	}
+	if (fclose(hOpcodeFile)!=0) {
+		free(pOpcodeData);
+		fprintf(stderr, "[ERROR] closing opcode database failed:' %s'\n", FILEPATH_OPCODES);
+		return ERR_FILE_OPERATION;
+	}
+	g_objOpcodesData.m_pData=pOpcodeData;
+	g_objOpcodesData.m_nSize=(size_t)nOpcodeFileSize;
+	return RET_SUCCESS;
+}
 
 //====================================================================================================
 void SCommand_Init(SCommand* o_pObjCommand)
@@ -124,20 +181,18 @@ char* convertByteToBitString(UByte* i_pByte)
 }
 
 //====================================================================================================
-int findCommand(FILE* i_hOpcodeFile,const char* i_strOpcodeBits, char* i_strModrmBits)
+int findCommand(const char* i_pStrOpcodeBits, char* i_pStrModrmBits)
 {
-	int idxTextOffset=0,idxOpcode=0;
+	size_t idxTextOffset=0,idxOpcode=0,idxOpcodeData;
 	char nBufferByte,nBufferByte2;
-	while (1) {
-		fseek(i_hOpcodeFile,idxTextOffset,SEEK_SET);
-		if (feof(i_hOpcodeFile)){
-			return -1;
-		}
+	while (idxTextOffset <= g_objOpcodesData.m_nSize &&
+		g_objOpcodesData.m_nSize - idxTextOffset >= LINE_LEN) {
+		idxOpcodeData=idxTextOffset;
 		while (1){
-			fread(&nBufferByte,1,1,i_hOpcodeFile);
+			nBufferByte=(char)readOpcodeByte(&idxOpcodeData);
 			//printf("\tbuf:%c text_counter:%d\n",buf,text_counter);
 			//getch();
-			if (i_strOpcodeBits[idxOpcode]==0){
+			if (i_pStrOpcodeBits[idxOpcode]==0){
 				if (nBufferByte!=' ' && nBufferByte!='|'){
 					//printf("\tNOT FOUND 1\n");
 					idxOpcode=0;
@@ -147,21 +202,20 @@ int findCommand(FILE* i_hOpcodeFile,const char* i_strOpcodeBits, char* i_strModr
 				
 				//now modrm testing
 				//printf("\t\tStarting to tezt reg field:\n");
-				fseek(i_hOpcodeFile,idxTextOffset+MODRM_FIELD_OFFSET,SEEK_SET);//check is modrm present
-				fread(&nBufferByte,1,1,i_hOpcodeFile);
+				nBufferByte=(char)g_objOpcodesData.m_pData[idxTextOffset+MODRM_FIELD_OFFSET];//check is modrm present
 				if (nBufferByte==' '){//modrm isnt here
-					return idxTextOffset;
+					return (int)idxTextOffset;
 				}
 				
 				if (nBufferByte=='m'){//md
-					if ((i_strModrmBits[0]=='1')&&(i_strModrmBits[1]=='1')){
+					if ((i_pStrModrmBits[0]=='1')&&(i_pStrModrmBits[1]=='1')){
 						idxOpcode=0;
 						break;
 					}
 				}else{//11
-					if (nBufferByte==i_strModrmBits[0]){
-						fread(&nBufferByte,1,1,i_hOpcodeFile);
-						if (nBufferByte!=i_strModrmBits[1]){
+					if (nBufferByte==i_pStrModrmBits[0]){
+						nBufferByte=(char)g_objOpcodesData.m_pData[idxTextOffset+MODRM_FIELD_OFFSET+1];
+						if (nBufferByte!=i_pStrModrmBits[1]){
 							idxOpcode=0;
 							break;
 						}
@@ -171,62 +225,60 @@ int findCommand(FILE* i_hOpcodeFile,const char* i_strOpcodeBits, char* i_strModr
 					}
 				}				
 				
-				fseek(i_hOpcodeFile,idxTextOffset+MODRM_FIELD_OFFSET+3,SEEK_SET);//+3 for reg/opcode field
-				fread(&nBufferByte,1,1,i_hOpcodeFile);
+				nBufferByte=(char)g_objOpcodesData.m_pData[idxTextOffset+MODRM_FIELD_OFFSET+3];//+3 for reg/opcode field
 				
 				if (nBufferByte!='0' && nBufferByte!='1'){
 					//printf("FindCommand:2\n");
-					return idxTextOffset;
+					return (int)idxTextOffset;
 				}
 				
-				if (i_strModrmBits[2]!=nBufferByte){
+				if (i_pStrModrmBits[2]!=nBufferByte){
 					idxOpcode=0;
 					//printf("\tNOT FOUND -2\n");
 					break;
 				}
-				fread(&nBufferByte,1,1,i_hOpcodeFile);
-				if (i_strModrmBits[3]!=nBufferByte){
+				nBufferByte=(char)g_objOpcodesData.m_pData[idxTextOffset+MODRM_FIELD_OFFSET+4];
+				if (i_pStrModrmBits[3]!=nBufferByte){
 					idxOpcode=0;
 					//printf("\tNOT FOUND 3\n");
 					break;
 				}
-				fread(&nBufferByte,1,1,i_hOpcodeFile);
-				if (i_strModrmBits[4]!=nBufferByte){
+				nBufferByte=(char)g_objOpcodesData.m_pData[idxTextOffset+MODRM_FIELD_OFFSET+5];
+				if (i_pStrModrmBits[4]!=nBufferByte){
 					idxOpcode=0;
 					//printf("\tNOT FOUND 4\n");
 					break;
 				}
 				//printf("FindCommand:3\n");
-				return idxTextOffset;
+				return (int)idxTextOffset;
 			}
 			
-			if ((nBufferByte!=i_strOpcodeBits[idxOpcode]) && (nBufferByte=='0' || nBufferByte=='1' || nBufferByte==' ')){
+			if ((nBufferByte!=i_pStrOpcodeBits[idxOpcode]) && (nBufferByte=='0' || nBufferByte=='1' || nBufferByte==' ')){
 				//printf("\tNOT FOUND 5 opcode_counter:%d text_counter=%d\n\t\tbuf=%c p=%c\n",opcode_counter,text_counter,buf,p[opcode_counter]);
 				idxOpcode=0;
 				break;
 			}
 			
 			if (nBufferByte=='f'){//pop s - push s processing
-				fseek(i_hOpcodeFile,ftell(i_hOpcodeFile)+3,SEEK_SET);//0-push,1-pop
-				fread(&nBufferByte,1,1,i_hOpcodeFile);
+				idxOpcodeData+=3;//0-push,1-pop
+				nBufferByte=(char)readOpcodeByte(&idxOpcodeData);
 				if (nBufferByte=='1'){//pop
-					if (((i_strOpcodeBits[idxOpcode]-'0')==0)&&((i_strOpcodeBits[idxOpcode+1]-'0')==1)){//01-cs
+					if (((i_pStrOpcodeBits[idxOpcode]-'0')==0)&&((i_pStrOpcodeBits[idxOpcode+1]-'0')==1)){//01-cs
 						idxOpcode=0;
 						break;
 					}
 				}
-				fseek(i_hOpcodeFile,ftell(i_hOpcodeFile)-3,SEEK_SET);
+				idxOpcodeData-=3;
 				++idxOpcode;
 			}
 			
 			if (nBufferByte=='u'){//uuu-sreg3 //pop s
-				nBufferByte2=(i_strOpcodeBits[idxOpcode]-'0')*4+(i_strOpcodeBits[idxOpcode+1]-'0')*2+i_strOpcodeBits[idxOpcode+2]-'0';
+				nBufferByte2=(i_pStrOpcodeBits[idxOpcode]-'0')*4+(i_pStrOpcodeBits[idxOpcode+1]-'0')*2+i_pStrOpcodeBits[idxOpcode+2]-'0';
 				if ((nBufferByte2!=4)&&(nBufferByte2!=5)){//buf2!=100(fs) & buf2!=101(gs)
 					idxOpcode=0;
 					break;
 				}
-				fread(&nBufferByte,1,1,i_hOpcodeFile);
-				fread(&nBufferByte,1,1,i_hOpcodeFile);
+				idxOpcodeData+=2;
 				idxOpcode+=2;
 			}
 			
@@ -234,10 +286,10 @@ int findCommand(FILE* i_hOpcodeFile,const char* i_strOpcodeBits, char* i_strModr
 		}
 		idxTextOffset+=LINE_LEN;
 		while (1){//comments
-			fseek(i_hOpcodeFile,idxTextOffset,SEEK_SET);
-			if (fread(&nBufferByte,1,1,i_hOpcodeFile)==0){//file end
+			if (idxTextOffset >= g_objOpcodesData.m_nSize){//file end
 				return -1;
 			}
+			nBufferByte=(char)g_objOpcodesData.m_pData[idxTextOffset];
 			
 			//printf("\t2) buf:%c text_counter:%d\n",buf,text_counter);
 			if (nBufferByte!=';'){
@@ -362,7 +414,7 @@ void SCommand_Print(const SCommand* i_pCommand)
 int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvailableBytes)
 {
 	UByte objTempByte;
-	FILE*hOpcodeFile;
+	size_t opcodePosition=0;
 	int idxByte=0,nCommandOffset,nExtensionLength=0,idxOperand=0,nCommandLength,nBytesRead;
 	unsigned char* pBytes;
 	char* strBitString;
@@ -372,10 +424,6 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 	//printf("Begin GetCommand:\n");
 
 
-	if ((hOpcodeFile=fopen(FILEPATH_OPCODES,"rb"))==0){
-		printf("\tError: cant open \"%s\"\n", FILEPATH_OPCODES);
-		return RET_ERROR;
-	}
 	pBytes=(unsigned char*)malloc(MAX_COMMAND_LEN);//mem allocating
 	nBytesRead=fread(pBytes, 1, i_nAvailableBytes, i_hTargetFile);//reading data block, !file pointer+=MAX_COMMAND_LEN!
 	
@@ -411,7 +459,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 #ifdef _DEBUG
 		printf("\t\tPossible opcode:%s possible modrm:%s\n",o_pCommand->m_objOpcode.m_strBits,strBitString);
 #endif
-		if ((nCommandOffset=findCommand(hOpcodeFile,o_pCommand->m_objOpcode.m_strBits,strBitString))!=-1){//command found
+		if ((nCommandOffset=findCommand(o_pCommand->m_objOpcode.m_strBits,strBitString))!=-1){//command found
 			break;//we can exit, buf<4
 		}
 		++nBufferByte;
@@ -419,7 +467,6 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 	
 	if (nBufferByte==3){//command not found
 		printf("\tError:command not found!\n");
-		fclose(hOpcodeFile);
 		return RET_ERROR;
 	}
 	//now in temp_int command position 
@@ -430,10 +477,10 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 	
 	/*------------------------------------------------------------ext parsing---------------------------------------------------------*/	
 
-	fseek(hOpcodeFile,nCommandOffset,SEEK_SET);//fp on command field
+	opcodePosition=(size_t)nCommandOffset;//fp on command field
 	nExtensionLength=0;
 	while (1){
-		fread(&nBufferByte,1,1,hOpcodeFile);
+		nBufferByte=readOpcodeByte(&opcodePosition);
 		if (nBufferByte==' '){//cell end
 			break;
 		}
@@ -453,33 +500,33 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 		case 'r'://reg
 			o_pCommand->m_objSpecialFields.m_nReg=(o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0')*4+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+1]-'0')*2+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+2]-'0');
 			nExtensionLength+=2;
-			fread(&nBufferByte,1,1,hOpcodeFile);
-			fread(&nBufferByte,1,1,hOpcodeFile);
+			nBufferByte=readOpcodeByte(&opcodePosition);
+			nBufferByte=readOpcodeByte(&opcodePosition);
 			break;
 			
 		case 't'://tttn
 			o_pCommand->m_objSpecialFields.m_nTttn=(o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0')*8+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+1]-'0')*4+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+2]-'0')*2+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+3]-'0');
 			nExtensionLength+=3;
-			fread(&nBufferByte,1,1,hOpcodeFile);
-			fread(&nBufferByte,1,1,hOpcodeFile);
-			fread(&nBufferByte,1,1,hOpcodeFile);
+			nBufferByte=readOpcodeByte(&opcodePosition);
+			nBufferByte=readOpcodeByte(&opcodePosition);
+			nBufferByte=readOpcodeByte(&opcodePosition);
 			break;
 		case 'e'://eee special purpose registers (cr, dr)
 			o_pCommand->m_objSpecialFields.m_nEee=(o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0')*4+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+1]-'0')*2+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+2]-'0');
 			nExtensionLength+=2;
-			fread(&nBufferByte,1,1,hOpcodeFile);
-			fread(&nBufferByte,1,1,hOpcodeFile);
+			nBufferByte=readOpcodeByte(&opcodePosition);
+			nBufferByte=readOpcodeByte(&opcodePosition);
 			break;
 		case 'f'://ff-sreg2(2 bits) 
 			o_pCommand->m_objSpecialFields.m_nFf=(o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0')*2+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+1]-'0');
 			nExtensionLength+=1;
-			fread(&nBufferByte,1,1,hOpcodeFile);
+			nBufferByte=readOpcodeByte(&opcodePosition);
 			break;
 		case 'u'://uuu-sreg3(3 bits)
 			o_pCommand->m_objSpecialFields.m_nUuu=(o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0')*4+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+1]-'0')*2+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+2]-'0');
 			nExtensionLength+=2;
-			fread(&nBufferByte,1,1,hOpcodeFile);
-			fread(&nBufferByte,1,1,hOpcodeFile);
+			nBufferByte=readOpcodeByte(&opcodePosition);
+			nBufferByte=readOpcodeByte(&opcodePosition);
 			break;
 			/*default:
 			printf("\tError:cant find ext. buf=%c\n",buf);
@@ -490,8 +537,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 	}
 	/*------------------------------------------------------------ext parsing---------------------------------------------------------*/	
 	/*----------------------------------------------------------modrm parsing---------------------------------------------------------*/	
-	fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET,SEEK_SET);//check modrm is present
-	fread(&nBufferByte,1,1,hOpcodeFile);
+	opcodePosition=(size_t)nCommandOffset+MODRM_FIELD_OFFSET;//check modrm is present
+	nBufferByte=readOpcodeByte(&opcodePosition);
 	if (nBufferByte!=' '){//modrm is here
 		o_pCommand->m_objModrm.m_nModrm=pBytes[idxByte];
 		o_pCommand->m_objModrm.m_nMod=(strBitString[0]-'0')*2+(strBitString[1]-'0');
@@ -506,11 +553,11 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 	/*----------------------------------------------------------modrm parsing---------------------------------------------------------*/
 
 	/*--------------------------------------------------------command parsing---------------------------------------------------------*/
-	fseek(hOpcodeFile,nCommandOffset+DESCRIPTION_FIELD_OFFSET,SEEK_SET);
+	opcodePosition=(size_t)nCommandOffset+DESCRIPTION_FIELD_OFFSET;
 	//printf("\tfseek=%d temp_int+DESCRIPTION_FIELD_OFFSET=%d\n",ftell(hFileOpcodes),temp_int+DESCRIPTION_FIELD_OFFSET);
 	nExtensionLength=0;
 	while (1){//readindg command
-		fread(&nBufferByte,1,1,hOpcodeFile);
+		nBufferByte=readOpcodeByte(&opcodePosition);
 		if (nBufferByte==' '){
 			break;
 		}
@@ -529,7 +576,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 	nExtensionLength=0;
 	while (1){
 		o_pCommand->m_strParameters=(char*)realloc(o_pCommand->m_strParameters,nExtensionLength+2);
-		fread(&nBufferByte,1,1,hOpcodeFile);
+		nBufferByte=readOpcodeByte(&opcodePosition);
 		if (nBufferByte==' '){// no operands | file end
 			break;
 		}
@@ -565,12 +612,10 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				nExtensionLength=o_pCommand->m_objSpecialFields.m_nReg;
 				//printf("\t\tpos in ret:%d temp_char:%s\n",Find(hFileRet,temp_char1),temp_char1);
 			}else{//search in mod/opcode section
-				fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+3,SEEK_SET);//fp on mod/opcode section
-				fread(&nBufferByte,1,1,hOpcodeFile);
+				nBufferByte=g_objOpcodesData.m_pData[nCommandOffset+MODRM_FIELD_OFFSET+3];//fp on mod/opcode section
 				if (nBufferByte=='r'){
 					//check if reg1
-					fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+6,SEEK_SET);
-					fread(&nBufferByte,1,1,hOpcodeFile);
+					nBufferByte=g_objOpcodesData.m_pData[nCommandOffset+MODRM_FIELD_OFFSET+6];
 					if (nBufferByte=='1' || nBufferByte==' '){//reg1 | reg
 						nExtensionLength=o_pCommand->m_objModrm.m_nReg;
 					}else{//reg1 in rm section
@@ -690,11 +735,9 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			
 			//------------------------------------reg2----------------------------------------------------------------------			
 		case 'p'://reg2
-			fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+3,SEEK_SET);//fp on reg/opcode section
-			fread(&nBufferByte,1,1,hOpcodeFile);
+			nBufferByte=g_objOpcodesData.m_pData[nCommandOffset+MODRM_FIELD_OFFSET+3];//fp on reg/opcode section
 			if (nBufferByte=='r'){//check if reg2
-				fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+6,SEEK_SET);
-				fread(&nBufferByte,1,1,hOpcodeFile);
+				nBufferByte=g_objOpcodesData.m_pData[nCommandOffset+MODRM_FIELD_OFFSET+6];
 				if (nBufferByte=='2'){//reg2
 					nExtensionLength=o_pCommand->m_objModrm.m_nReg;
 				}else{//reg2 in rm section
@@ -819,8 +862,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				if (o_pCommand->m_objSpecialFields.m_nUuu!=-128){
 					nExtensionLength=o_pCommand->m_objSpecialFields.m_nUuu;
 				}else{
-					fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+3,SEEK_SET);//fp on mod/opcode section
-					fread(&nBufferByte,1,1,hOpcodeFile);
+					nBufferByte=g_objOpcodesData.m_pData[nCommandOffset+MODRM_FIELD_OFFSET+3];//fp on mod/opcode section
 					nExtensionLength = (nBufferByte == 's') ? o_pCommand->m_objModrm.m_nReg : o_pCommand->m_objModrm.m_nRm;
 				}
 			}
@@ -851,14 +893,13 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				break;
 				
 			case 6://reserved1
-				fclose(hOpcodeFile);
 				free(pBytes);
 				return RET_ERROR;//error
 				break;
 				
 			case 7://reserved2
+				free(pBytes);
 				return RET_ERROR;//error
-				fclose(hOpcodeFile);
 				free(pBytes);
 				break;
 			}
@@ -889,8 +930,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			if (o_pCommand->m_objSpecialFields.m_nEee!=-128){
 				nExtensionLength=o_pCommand->m_objSpecialFields.m_nEee;
 			}else{
-				fseek(hOpcodeFile,MODRM_FIELD_OFFSET+3,SEEK_SET);
-				fread(&nBufferByte,1,1,hOpcodeFile);
+				nBufferByte=g_objOpcodesData.m_pData[MODRM_FIELD_OFFSET+3];
 				nExtensionLength = (nBufferByte == 'e') ? o_pCommand->m_objModrm.m_nReg : o_pCommand->m_objModrm.m_nRm;
 			}
 			switch(nExtensionLength){
@@ -935,8 +975,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			if (o_pCommand->m_objSpecialFields.m_nEee!=-128){
 				nExtensionLength=o_pCommand->m_objSpecialFields.m_nEee;
 			}else{
-				fseek(hOpcodeFile,MODRM_FIELD_OFFSET+3,SEEK_SET);
-				fread(&nBufferByte,1,1,hOpcodeFile);
+				nBufferByte=g_objOpcodesData.m_pData[MODRM_FIELD_OFFSET+3];
 				nExtensionLength = (nBufferByte == 'e') ? o_pCommand->m_objModrm.m_nReg : o_pCommand->m_objModrm.m_nRm;
 			}
 			switch (nExtensionLength){
@@ -1754,7 +1793,6 @@ break;
 	//-----------------------------------------------operands parsing----------------------------------------------------------------------------------------------------------------------------------------------------------	
 	
 	fseek(i_hTargetFile,ftell(i_hTargetFile)-nBytesRead+idxByte,SEEK_SET);
-	fclose(hOpcodeFile);
 	return RET_SUCCESS;
 }
 
@@ -1876,10 +1914,19 @@ int main(int i_nArgc, char* i_ppArgv[])
 		return ERR_FILE_OPERATION;
 	}
 
+	nResult=loadOpcodeDatabase();
+	if (nResult!=RET_SUCCESS) {
+		fclose(hTargetFile);
+		return nResult;
+	}
+
 	if (i_nArgc == 3) {
 		hDisassemblyFile = fopen(i_ppArgv[2], "w");
 		if (hDisassemblyFile == NULL) {
 			printf("[ERROR] opening output file failed : %s\n", i_ppArgv[2]);
+			free(g_objOpcodesData.m_pData);
+			g_objOpcodesData.m_pData=NULL;
+			g_objOpcodesData.m_nSize=0;
 			fclose(hTargetFile);
 			return ERR_FILE_OPERATION;
 		}
@@ -1889,6 +1936,9 @@ int main(int i_nArgc, char* i_ppArgv[])
 	nResult = disassembleFile(hTargetFile, hDisassemblyFile);
 
 	// Cleanup
+	free(g_objOpcodesData.m_pData);
+	g_objOpcodesData.m_pData=NULL;
+	g_objOpcodesData.m_nSize=0;
 	fclose(hTargetFile);
 	if (hDisassemblyFile != stdout &&
 		fclose(hDisassemblyFile) != 0) {
