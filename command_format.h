@@ -21,71 +21,79 @@
 
 //TODO change char -> TYPE_BYTE
 
-typedef struct {
-	char scale;
-	char index;
-	char base;
-	unsigned char sib;
+typedef struct
+{
+	char m_nScale;
+	char m_nIndex;
+	char m_nBase;
+	unsigned char m_nSib;
 } SIB;
 
-typedef struct {
-	char mod;
-	char reg;
-	char rm;
-	unsigned char modrm;// HEX view of modrm
+typedef struct
+{
+	char m_nMod;
+	char m_nReg;
+	char m_nRm;
+	unsigned char m_nModrm;// HEX view of modrm
 } MODRM;
 
-typedef struct {
-		unsigned bit0:1;//TODO: implement as bit field?
-		unsigned bit1:1;
-		unsigned bit2:1;
-		unsigned bit3:1;
-		unsigned bit4:1;
-		unsigned bit5:1;
-		unsigned bit6:1;
-		unsigned bit7:1;
-	}SByte;
+typedef struct
+{
+	unsigned m_nBit0:1;//TODO: implement as bit field?
+	unsigned m_nBit1:1;
+	unsigned m_nBit2:1;
+	unsigned m_nBit3:1;
+	unsigned m_nBit4:1;
+	unsigned m_nBit5:1;
+	unsigned m_nBit6:1;
+	unsigned m_nBit7:1;
+} SByte;
 
-typedef union{
-	char byte;
-	SByte ubyte;
+typedef union
+{
+	char m_nByte;
+	SByte m_objUByte;
 } UByte;
 
-typedef struct {
-	unsigned char bytenum;
-	unsigned char*hex_bytes;//array of command bytes
-	char*bytes;//binary view
+typedef struct
+{
+	unsigned char m_nByteNum;
+	unsigned char* m_pHexBytes;//array of command bytes
+	char* m_strBits;//binary view
 } OPCODE;
 
-typedef struct {
-	unsigned char prefixcount;//number of prefixes
-	unsigned char*p;//pointer to prefix array
+typedef struct
+{
+	unsigned char m_nPrefixCount;//number of prefixes
+	unsigned char* m_pBytes;//pointer to prefix array
 	
-	unsigned char lnr;//lock and repeat prefixes-f0, f2, f3
-	unsigned char segr;//segment redefinition prefixes-2e, 36,3e,26,64,65
-	unsigned char opr;//operand size redefenition prefix-66
-	unsigned char sr;//address size redefenition prefix-67
+	unsigned char m_nLnr;//lock and repeat prefixes-f0, f2, f3
+	unsigned char m_nSegr;//segment redefinition prefixes-2e, 36,3e,26,64,65
+	unsigned char m_nOpr;//operand size redefenition prefix-66
+	unsigned char m_nSr;//address size redefenition prefix-67
 } PREFIX;
 
-typedef struct {
-	char w;
-	char s;
-	char d;
-	char reg;
-	char tttn;
-	char eee;//special purpose registers
-	char uuu;//sreg3 (3 bits)
-	char ff;//sreg2 (2 bits)
-}SPECIALFIELDS;
+typedef struct
+{
+	char m_nW;
+	char m_nS;
+	char m_nD;
+	char m_nReg;
+	char m_nTttn;
+	char m_nEee;//special purpose registers
+	char m_nUuu;//sreg3 (3 bits)
+	char m_nFf;//sreg2 (2 bits)
+} SPECIALFIELDS;
 
-typedef struct {
-	PREFIX prefix;
-	OPCODE opcode;
-	SPECIALFIELDS sf;
-	MODRM modrm;
-	SIB sib;
-	char*com_text;
-	char**parameters;
-	char*par;
-	int par_count;
+typedef struct
+{
+	PREFIX m_objPrefix;
+	OPCODE m_objOpcode;
+	SPECIALFIELDS m_objSpecialFields;
+	MODRM m_objModrm;
+	SIB m_objSib;
+	char* m_strCommandText;
+	char** m_pParameters;
+	char* m_strParameters;
+	int m_nParameterCount;
 } SCommand;

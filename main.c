@@ -41,234 +41,237 @@
 #define FILEPATH_OPCODES "opcodes.txt" //TODO TEXT("opcodes.txt")
 
 //====================================================================================================
-void SCommand_Init(SCommand* i_pObjCommand)
+void SCommand_Init(SCommand* o_pObjCommand)
 {
 	int idxOpcodeByte = 0;
 
-	i_pObjCommand->prefix.prefixcount = 0;
-	i_pObjCommand->prefix.p = NULL;
-	i_pObjCommand->prefix.lnr = 255; //TODO values in hex representation
-	i_pObjCommand->prefix.segr = 255;
-	i_pObjCommand->prefix.opr = 255;
-	i_pObjCommand->prefix.sr = 255;
+	o_pObjCommand->m_objPrefix.m_nPrefixCount = 0;
+	o_pObjCommand->m_objPrefix.m_pBytes = NULL;
+	o_pObjCommand->m_objPrefix.m_nLnr = 255; //TODO values in hex representation
+	o_pObjCommand->m_objPrefix.m_nSegr = 255;
+	o_pObjCommand->m_objPrefix.m_nOpr = 255;
+	o_pObjCommand->m_objPrefix.m_nSr = 255;
 
-	i_pObjCommand->opcode.bytenum = 0;
-	i_pObjCommand->opcode.bytes = (char*)malloc(25); //24 bits + 0
+	o_pObjCommand->m_objOpcode.m_nByteNum = 0;
+	o_pObjCommand->m_objOpcode.m_strBits = (char*)malloc(25); //24 bits + 0
 	for (; idxOpcodeByte < 25; ++idxOpcodeByte) {
-		i_pObjCommand->opcode.bytes[idxOpcodeByte] = 0;
+		o_pObjCommand->m_objOpcode.m_strBits[idxOpcodeByte] = 0;
 	}
 
-	i_pObjCommand->opcode.hex_bytes = (char*)malloc(3);
+	o_pObjCommand->m_objOpcode.m_pHexBytes = (unsigned char*)malloc(3);
 
-	i_pObjCommand->sf.w = -128;
-	i_pObjCommand->sf.s = -128;
-	i_pObjCommand->sf.d = -128;
-	i_pObjCommand->sf.uuu = -128;
-	i_pObjCommand->sf.ff = -128;
-	i_pObjCommand->sf.reg = -128;
-	i_pObjCommand->sf.eee = -128;
-	i_pObjCommand->sf.tttn = -128;
+	o_pObjCommand->m_objSpecialFields.m_nW = -128;
+	o_pObjCommand->m_objSpecialFields.m_nS = -128;
+	o_pObjCommand->m_objSpecialFields.m_nD = -128;
+	o_pObjCommand->m_objSpecialFields.m_nUuu = -128;
+	o_pObjCommand->m_objSpecialFields.m_nFf = -128;
+	o_pObjCommand->m_objSpecialFields.m_nReg = -128;
+	o_pObjCommand->m_objSpecialFields.m_nEee = -128;
+	o_pObjCommand->m_objSpecialFields.m_nTttn = -128;
 
-	i_pObjCommand->modrm.mod = -128;
-	i_pObjCommand->modrm.reg = -128;
-	i_pObjCommand->modrm.rm = -128;
+	o_pObjCommand->m_objModrm.m_nMod = -128;
+	o_pObjCommand->m_objModrm.m_nReg = -128;
+	o_pObjCommand->m_objModrm.m_nRm = -128;
 
-	i_pObjCommand->sib.scale = -128;
-	i_pObjCommand->sib.index = -128;
-	i_pObjCommand->sib.base = -128;
-	i_pObjCommand->sib.sib = 255;
+	o_pObjCommand->m_objSib.m_nScale = -128;
+	o_pObjCommand->m_objSib.m_nIndex = -128;
+	o_pObjCommand->m_objSib.m_nBase = -128;
+	o_pObjCommand->m_objSib.m_nSib = 255;
 
-	i_pObjCommand->com_text = NULL;
-	i_pObjCommand->parameters = NULL;
-	i_pObjCommand->par = NULL;
-	i_pObjCommand->par_count = 0;
+	o_pObjCommand->m_strCommandText = NULL;
+	o_pObjCommand->m_pParameters = NULL;
+	o_pObjCommand->m_strParameters = NULL;
+	o_pObjCommand->m_nParameterCount = 0;
 	return;
 }
 
 //====================================================================================================
-void SCommand_Destroy(SCommand* i_pObjCommand)
+void SCommand_Destroy(SCommand* o_pObjCommand)
 {
 	int idxParam = 0;
-	int parameter_count = i_pObjCommand->par == NULL ? 0 : (int)strlen(i_pObjCommand->par);
-	if (i_pObjCommand->parameters != NULL) {
-		while (idxParam < parameter_count) {
-			free(i_pObjCommand->parameters[idxParam]);
+	size_t nParameterCount = o_pObjCommand->m_strParameters == NULL ? 0 : strlen(o_pObjCommand->m_strParameters);
+	if (o_pObjCommand->m_pParameters != NULL) {
+		while (idxParam < nParameterCount) {
+			free(o_pObjCommand->m_pParameters[idxParam]);
 			++idxParam;
 		}
-		free(i_pObjCommand->parameters);
+		free(o_pObjCommand->m_pParameters);
 	}
-	free(i_pObjCommand->prefix.p);
-	free(i_pObjCommand->opcode.bytes);
-	free(i_pObjCommand->opcode.hex_bytes);
-	free(i_pObjCommand->com_text);
-	free(i_pObjCommand->par);
-	memset(i_pObjCommand, 0, sizeof(*i_pObjCommand));
+	free(o_pObjCommand->m_objPrefix.m_pBytes);
+	free(o_pObjCommand->m_objOpcode.m_strBits);
+	free(o_pObjCommand->m_objOpcode.m_pHexBytes);
+	free(o_pObjCommand->m_strCommandText);
+	free(o_pObjCommand->m_strParameters);
+	memset(o_pObjCommand, 0, sizeof(*o_pObjCommand));
 }
 
 //====================================================================================================
-char* SByte2Char(UByte*bp){
-	char*mp;
-	mp=(char*)malloc(9);//mem allocating
-	mp[0]=(char)bp->ubyte.bit7+'0';
-	mp[1]=(char)bp->ubyte.bit6+'0';
-	mp[2]=(char)bp->ubyte.bit5+'0';
-	mp[3]=(char)bp->ubyte.bit4+'0';
-	mp[4]=(char)bp->ubyte.bit3+'0';
-	mp[5]=(char)bp->ubyte.bit2+'0';
-	mp[6]=(char)bp->ubyte.bit1+'0';
-	mp[7]=(char)bp->ubyte.bit0+'0';
-	mp[8]=0;
-	return mp;
+char* convertByteToBitString(UByte* i_pByte)
+{
+	char* pBitsStrRepr;
+	pBitsStrRepr = (char*)malloc(9);//mem allocating
+	pBitsStrRepr[0]=(char)i_pByte->m_objUByte.m_nBit7+'0';
+	pBitsStrRepr[1]=(char)i_pByte->m_objUByte.m_nBit6+'0';
+	pBitsStrRepr[2]=(char)i_pByte->m_objUByte.m_nBit5+'0';
+	pBitsStrRepr[3]=(char)i_pByte->m_objUByte.m_nBit4+'0';
+	pBitsStrRepr[4]=(char)i_pByte->m_objUByte.m_nBit3+'0';
+	pBitsStrRepr[5]=(char)i_pByte->m_objUByte.m_nBit2+'0';
+	pBitsStrRepr[6]=(char)i_pByte->m_objUByte.m_nBit1+'0';
+	pBitsStrRepr[7]=(char)i_pByte->m_objUByte.m_nBit0+'0';
+	pBitsStrRepr[8]=0;
+	return pBitsStrRepr;
 }
 
 //====================================================================================================
-int FindCommand(FILE*f,char*p,char*modrm){
-	int text_counter=0,opcode_counter=0;
-	char buf,buf2;
-	while(1){
-		fseek(f,text_counter,SEEK_SET);
-		if(feof(f)){
+int findCommand(FILE* i_hOpcodeFile,const char* i_strOpcodeBits, char* i_strModrmBits)
+{
+	int idxTextOffset=0,idxOpcode=0;
+	char nBufferByte,nBufferByte2;
+	while (1) {
+		fseek(i_hOpcodeFile,idxTextOffset,SEEK_SET);
+		if (feof(i_hOpcodeFile)){
 			return -1;
 		}
-		while(1){
-			fread(&buf,1,1,f);
+		while (1){
+			fread(&nBufferByte,1,1,i_hOpcodeFile);
 			//printf("\tbuf:%c text_counter:%d\n",buf,text_counter);
 			//getch();
-			if(p[opcode_counter]==0){
-				if(buf!=' ' && buf!='|'){
+			if (i_strOpcodeBits[idxOpcode]==0){
+				if (nBufferByte!=' ' && nBufferByte!='|'){
 					//printf("\tNOT FOUND 1\n");
-					opcode_counter=0;
+					idxOpcode=0;
 					break;
 				}
 				
 				
 				//now modrm testing
 				//printf("\t\tStarting to tezt reg field:\n");
-				fseek(f,text_counter+MODRM_FIELD_OFFSET,SEEK_SET);//check is modrm present
-				fread(&buf,1,1,f);
-				if(buf==' '){//modrm isnt here
-					return text_counter;
+				fseek(i_hOpcodeFile,idxTextOffset+MODRM_FIELD_OFFSET,SEEK_SET);//check is modrm present
+				fread(&nBufferByte,1,1,i_hOpcodeFile);
+				if (nBufferByte==' '){//modrm isnt here
+					return idxTextOffset;
 				}
 				
-				if(buf=='m'){//md
-					if((modrm[0]=='1')&&(modrm[1]=='1')){
-						opcode_counter=0;
+				if (nBufferByte=='m'){//md
+					if ((i_strModrmBits[0]=='1')&&(i_strModrmBits[1]=='1')){
+						idxOpcode=0;
 						break;
 					}
 				}else{//11
-					if(buf==modrm[0]){
-						fread(&buf,1,1,f);
-						if(buf!=modrm[1]){
-							opcode_counter=0;
+					if (nBufferByte==i_strModrmBits[0]){
+						fread(&nBufferByte,1,1,i_hOpcodeFile);
+						if (nBufferByte!=i_strModrmBits[1]){
+							idxOpcode=0;
 							break;
 						}
 					}else{
-						opcode_counter=0;
+						idxOpcode=0;
 						break;
 					}
 				}				
 				
-				fseek(f,text_counter+MODRM_FIELD_OFFSET+3,SEEK_SET);//+3 for reg/opcode field
-				fread(&buf,1,1,f);
+				fseek(i_hOpcodeFile,idxTextOffset+MODRM_FIELD_OFFSET+3,SEEK_SET);//+3 for reg/opcode field
+				fread(&nBufferByte,1,1,i_hOpcodeFile);
 				
-				if(buf!='0' && buf!='1'){
+				if (nBufferByte!='0' && nBufferByte!='1'){
 					//printf("FindCommand:2\n");
-					return text_counter;
+					return idxTextOffset;
 				}
 				
-				if(modrm[2]!=buf){
-					opcode_counter=0;
+				if (i_strModrmBits[2]!=nBufferByte){
+					idxOpcode=0;
 					//printf("\tNOT FOUND -2\n");
 					break;
 				}
-				fread(&buf,1,1,f);
-				if(modrm[3]!=buf){
-					opcode_counter=0;
+				fread(&nBufferByte,1,1,i_hOpcodeFile);
+				if (i_strModrmBits[3]!=nBufferByte){
+					idxOpcode=0;
 					//printf("\tNOT FOUND 3\n");
 					break;
 				}
-				fread(&buf,1,1,f);
-				if(modrm[4]!=buf){
-					opcode_counter=0;
+				fread(&nBufferByte,1,1,i_hOpcodeFile);
+				if (i_strModrmBits[4]!=nBufferByte){
+					idxOpcode=0;
 					//printf("\tNOT FOUND 4\n");
 					break;
 				}
 				//printf("FindCommand:3\n");
-				return text_counter;
+				return idxTextOffset;
 			}
 			
-			if((buf!=p[opcode_counter]) && (buf=='0' || buf=='1' || buf==' ')){
+			if ((nBufferByte!=i_strOpcodeBits[idxOpcode]) && (nBufferByte=='0' || nBufferByte=='1' || nBufferByte==' ')){
 				//printf("\tNOT FOUND 5 opcode_counter:%d text_counter=%d\n\t\tbuf=%c p=%c\n",opcode_counter,text_counter,buf,p[opcode_counter]);
-				opcode_counter=0;
+				idxOpcode=0;
 				break;
 			}
 			
-			if(buf=='f'){//pop s - push s processing
-				fseek(f,ftell(f)+3,SEEK_SET);//0-push,1-pop
-				fread(&buf,1,1,f);
-				if(buf=='1'){//pop
-					if(((p[opcode_counter]-'0')==0)&&((p[opcode_counter+1]-'0')==1)){//01-cs
-						opcode_counter=0;
+			if (nBufferByte=='f'){//pop s - push s processing
+				fseek(i_hOpcodeFile,ftell(i_hOpcodeFile)+3,SEEK_SET);//0-push,1-pop
+				fread(&nBufferByte,1,1,i_hOpcodeFile);
+				if (nBufferByte=='1'){//pop
+					if (((i_strOpcodeBits[idxOpcode]-'0')==0)&&((i_strOpcodeBits[idxOpcode+1]-'0')==1)){//01-cs
+						idxOpcode=0;
 						break;
 					}
 				}
-				fseek(f,ftell(f)-3,SEEK_SET);
-				opcode_counter++;
+				fseek(i_hOpcodeFile,ftell(i_hOpcodeFile)-3,SEEK_SET);
+				idxOpcode++;
 			}
 			
-			if(buf=='u'){//uuu-sreg3 //pop s
-				buf2=(p[opcode_counter]-'0')*4+(p[opcode_counter+1]-'0')*2+p[opcode_counter+2]-'0';
-				if((buf2!=4)&&(buf2!=5)){//buf2!=100(fs) & buf2!=101(gs)
-					opcode_counter=0;
+			if (nBufferByte=='u'){//uuu-sreg3 //pop s
+				nBufferByte2=(i_strOpcodeBits[idxOpcode]-'0')*4+(i_strOpcodeBits[idxOpcode+1]-'0')*2+i_strOpcodeBits[idxOpcode+2]-'0';
+				if ((nBufferByte2!=4)&&(nBufferByte2!=5)){//buf2!=100(fs) & buf2!=101(gs)
+					idxOpcode=0;
 					break;
 				}
-				fread(&buf,1,1,f);
-				fread(&buf,1,1,f);
-				opcode_counter+=2;
+				fread(&nBufferByte,1,1,i_hOpcodeFile);
+				fread(&nBufferByte,1,1,i_hOpcodeFile);
+				idxOpcode+=2;
 			}
 			
 			
-			opcode_counter++;
+			idxOpcode++;
 		}
-		text_counter+=LINE_LEN;
-		while(1){//comments
-			fseek(f,text_counter,SEEK_SET);
-			if(fread(&buf,1,1,f)==0){//file end
+		idxTextOffset+=LINE_LEN;
+		while (1){//comments
+			fseek(i_hOpcodeFile,idxTextOffset,SEEK_SET);
+			if (fread(&nBufferByte,1,1,i_hOpcodeFile)==0){//file end
 				return -1;
 			}
 			
 			//printf("\t2) buf:%c text_counter:%d\n",buf,text_counter);
-			if(buf!=';'){
+			if (nBufferByte!=';'){
 				// printf("\tbrokenhearted\n");
 				break;	
 			}
-			text_counter+=LINE_LEN;
+			idxTextOffset+=LINE_LEN;
 		}
 	}
 }
 
 //====================================================================================================
-int SCommand_ParsePrefixes(SCommand*cp,const unsigned char*mp,int count){
-	char buf=0;
-	int bytecounter=0;
-	while(bytecounter<count){
+int SCommand_ParsePrefixes(SCommand* o_pCommand,const unsigned char* i_pBytes,int i_nByteCount)
+{
+	char nBufferByte=0;
+	int idxByte=0;
+	while (idxByte < i_nByteCount) {
 		//buf is used as flag that we can exit from while
-		switch(mp[bytecounter]){
+		switch(i_pBytes[idxByte]){
 			//1 group
 		case 0x66://redefinition of operand size
-			cp->prefix.opr=0x66;//setting flag
+			o_pCommand->m_objPrefix.m_nOpr=0x66;//setting flag
 			break;	
 			
 			//2 group			
 		case 0x67://redefinition of address size
-			cp->prefix.sr=0x67;//setting flag
+			o_pCommand->m_objPrefix.m_nSr=0x67;//setting flag
 			break;
 			
 			//3 group			
 		case 0xF0://LOCK
 		case 0xF2://REPNZ
 		case 0xF3://REP
-			cp->prefix.lnr=mp[bytecounter];//setting flag
+			o_pCommand->m_objPrefix.m_nLnr=i_pBytes[idxByte];//setting flag
 			break;
 			
 			//4 group			
@@ -278,76 +281,77 @@ int SCommand_ParsePrefixes(SCommand*cp,const unsigned char*mp,int count){
 		case 0x26://ES
 		case 0x64://FS
 		case 0x65://GS
-			cp->prefix.segr=mp[bytecounter];//setting flag
+			o_pCommand->m_objPrefix.m_nSegr=i_pBytes[idxByte];//setting flag
 			break;
 			
 		default:
-			buf=1;
+			nBufferByte=1;
 		}
-		if(buf==1){//exit
+		if (nBufferByte==1){//exit
 			break;
 		}
-		cp->prefix.prefixcount++;
-		cp->prefix.p=(char*)realloc(cp->prefix.p,cp->prefix.prefixcount);
-		cp->prefix.p[cp->prefix.prefixcount-1]=mp[bytecounter];
-		bytecounter++;
+		o_pCommand->m_objPrefix.m_nPrefixCount++;
+		o_pCommand->m_objPrefix.m_pBytes=(unsigned char*)realloc(o_pCommand->m_objPrefix.m_pBytes,o_pCommand->m_objPrefix.m_nPrefixCount);
+		o_pCommand->m_objPrefix.m_pBytes[o_pCommand->m_objPrefix.m_nPrefixCount-1]=i_pBytes[idxByte];
+		idxByte++;
 	}
-	if(bytecounter==count){
+	if (idxByte==i_nByteCount){
 		return RET_ERROR;
 	}
 	return RET_SUCCESS;
 }
 
 //====================================================================================================
-void Print(const SCommand*cp){
-	int i=0;
+void SCommand_Print(const SCommand* i_pCommand)
+{
+	int idx=0;
 	printf("SCommand:\n");
 	
 	printf("PREFIX:\n");//prefix
-	printf("\tprefixcount:%d\n",cp->prefix.prefixcount);
+	printf("\tprefixcount:%d\n",i_pCommand->m_objPrefix.m_nPrefixCount);
 	printf("\tp:");
-	while(i<cp->prefix.prefixcount){
-		printf(" %x",cp->prefix.p[i]);
-		i++;
+	while (idx<i_pCommand->m_objPrefix.m_nPrefixCount){
+		printf(" %x",		i_pCommand->m_objPrefix.m_pBytes[idx]);
+		++idx;
 	}
 	printf("\n");
-	printf("\tlnr:%x\n",cp->prefix.lnr);
-	printf("\tsegr:%x\n",cp->prefix.segr);
-	printf("\topr:%x\n",cp->prefix.opr);
-	printf("\tsr:%x\n",cp->prefix.sr);
+	printf("\tlnr:%x\n",i_pCommand->m_objPrefix.m_nLnr);
+	printf("\tsegr:%x\n",i_pCommand->m_objPrefix.m_nSegr);
+	printf("\topr:%x\n",i_pCommand->m_objPrefix.m_nOpr);
+	printf("\tsr:%x\n",i_pCommand->m_objPrefix.m_nSr);
 	
 	printf("OPCODE:\n");//opcodes
-	printf("\tbytenum:%d\n",cp->opcode.bytenum);
+	printf("\tbytenum:%d\n",i_pCommand->m_objOpcode.m_nByteNum);
 	printf("\thex_bytes:");
-	i=0;
-	while(i<cp->opcode.bytenum){
-		printf(" %#X",cp->opcode.hex_bytes[i]);
-		i++;
+	idx=0;
+	while (idx<i_pCommand->m_objOpcode.m_nByteNum){
+		printf(" %#X",i_pCommand->m_objOpcode.m_pHexBytes[idx]);
+		++idx;
 	}
 	printf("\n");
-	printf("\tbytes:%s\n",cp->opcode.bytes);
+	printf("\tbytes:%s\n",i_pCommand->m_objOpcode.m_strBits);
 	
 	printf("EXT:\n");
-	printf("\tw=%d s=%d d=%d reg=%d eee=%d uuu=%d ff=%d tttn=%d\n",cp->sf.w,cp->sf.s,cp->sf.d,cp->sf.reg,cp->sf.eee,cp->sf.uuu,cp->sf.ff,cp->sf.tttn);
+	printf("\tw=%d s=%d d=%d reg=%d eee=%d uuu=%d ff=%d tttn=%d\n",i_pCommand->m_objSpecialFields.m_nW,i_pCommand->m_objSpecialFields.m_nS,i_pCommand->m_objSpecialFields.m_nD,i_pCommand->m_objSpecialFields.m_nReg,i_pCommand->m_objSpecialFields.m_nEee,i_pCommand->m_objSpecialFields.m_nUuu,i_pCommand->m_objSpecialFields.m_nFf,i_pCommand->m_objSpecialFields.m_nTttn);
 	
 	printf("MODRM:\n");
-	printf("\tmodrm:%#X mod:%d reg:%d rm:%d\n",cp->modrm.modrm,cp->modrm.mod,cp->modrm.reg,cp->modrm.rm);
+	printf("\tmodrm:%#X mod:%d reg:%d rm:%d\n",i_pCommand->m_objModrm.m_nModrm,i_pCommand->m_objModrm.m_nMod,i_pCommand->m_objModrm.m_nReg,i_pCommand->m_objModrm.m_nRm);
 	printf("Command:\n");
-	printf("\tcom_text:%s\n",cp->com_text);
-	printf("\tpar:%s parcount:%d\n",cp->par,cp->par_count);
-	i=0;
+	printf("\tcom_text:%s\n",i_pCommand->m_strCommandText);
+	printf("\tpar:%s parcount:%d\n",i_pCommand->m_strParameters,i_pCommand->m_nParameterCount);
+	idx=0;
 	printf("\tparameters:\n");
-	while(i<cp->par_count){
-		printf("\t\t%d: %s\n",i,cp->parameters[i]);
-		i++;
+	while (idx<i_pCommand->m_nParameterCount){
+		printf("\t\t%d: %s\n",idx,i_pCommand->m_pParameters[idx]);
+		++idx;
 	}
-	printf("\nRESULT: %s",cp->com_text);//printing result
-	if(cp->par_count!=0){
-		printf(" %s",cp->parameters[0]);
-		i=1;
-		while(i<cp->par_count){
-			printf(", %s",cp->parameters[i]);	
-			i++;
+	printf("\nRESULT: %s",i_pCommand->m_strCommandText);//printing result
+	if (i_pCommand->m_nParameterCount!=0){
+		printf(" %s",i_pCommand->m_pParameters[0]);
+		idx=1;
+		while (idx<i_pCommand->m_nParameterCount){
+			printf(", %s",i_pCommand->m_pParameters[idx]);
+			++idx;
 		}
 	}
 	printf("\n");
@@ -355,34 +359,37 @@ void Print(const SCommand*cp){
 }
 
 //====================================================================================================
-int SCommand_GetCommand(SCommand*cp,FILE*i_hFileTargetPE){
-	UByte temp_byte;
-	FILE*hFileOpcodes;
-	int bytecounter=0,temp_int,ext_len=0,counter=0,com_len,com_len1;
-	unsigned char*mp,*temp_char,*temp_char1,*temp_char2,*temp_char3;
-	unsigned char buf,buf2;
+int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvailableBytes)
+{
+	UByte objTempByte;
+	FILE*hOpcodeFile;
+	int idxByte=0,nCommandOffset,nExtensionLength=0,idxOperand=0,nCommandLength,nBytesRead;
+	unsigned char* pBytes;
+	char* strBitString;
+	char* strTempText;
+	unsigned char nBufferByte,nBufferByte2;
 	
 	//printf("Begin GetCommand:\n");
 
 
-	if((hFileOpcodes=fopen(FILEPATH_OPCODES,"rb"))==0){
+	if ((hOpcodeFile=fopen(FILEPATH_OPCODES,"rb"))==0){
 		printf("\tError: cant open \"%s\"\n", FILEPATH_OPCODES);
 		return RET_ERROR;
 	}
-	mp=(unsigned char*)malloc(MAX_COMMAND_LEN);//mem allocating
-	com_len1=fread(mp,1,MAX_COMMAND_LEN,i_hFileTargetPE);//reading data block, !file pointer+=MAX_COMMAND_LEN!
+	pBytes=(unsigned char*)malloc(MAX_COMMAND_LEN);//mem allocating
+	nBytesRead=fread(pBytes, 1, i_nAvailableBytes, i_hTargetFile);//reading data block, !file pointer+=MAX_COMMAND_LEN!
 	
-	if(com_len1==0){//file end
+	if (nBytesRead==0){//file end
 		return RET_FILE_END;
 	}
 	
 	//printf("\"prefixes.ttt\" opened\n");
 	/*------------------------------------------------------------prefix parsing------------------------------------------------------*/
-	if(SCommand_ParsePrefixes(cp,mp,com_len1)==RET_ERROR){
+	if (SCommand_ParsePrefixes(o_pCommand,pBytes,nBytesRead)==RET_ERROR){
 		printf("\tError: invalid command\n");
 		return RET_ERROR;
 	}
-	bytecounter+=cp->prefix.prefixcount;
+	idxByte+=o_pCommand->m_objPrefix.m_nPrefixCount;
 	/*------------------------------------------------------------prefix parsing------------------------------------------------------*/	
 	
 	/*------------------------------------------------------------command finding-----------------------------------------------------*/	
@@ -390,347 +397,347 @@ int SCommand_GetCommand(SCommand*cp,FILE*i_hFileTargetPE){
 	printf("\tCommand finding:\n");
 #endif
 	
-	buf=0;//like current command byte counter
-	while(buf<3){//coz buf=0
-		temp_byte.byte=mp[bytecounter];
-		temp_char=SByte2Char(&temp_byte);
-		strcpy(cp->opcode.bytes+buf*8,temp_char);
-		cp->opcode.hex_bytes[buf]=mp[bytecounter];
-		cp->opcode.bytenum++;
-		free(temp_char);
-		bytecounter++;
-		temp_byte.byte=mp[bytecounter];//possible modrm
-		temp_char=SByte2Char(&temp_byte);
+	nBufferByte=0;//like current command byte counter
+	while (nBufferByte < 3){//coz buf=0
+		objTempByte.m_nByte=pBytes[idxByte];
+		strBitString=convertByteToBitString(&objTempByte);
+		strcpy(o_pCommand->m_objOpcode.m_strBits+nBufferByte*8,strBitString);
+		o_pCommand->m_objOpcode.m_pHexBytes[nBufferByte]=pBytes[idxByte];
+		o_pCommand->m_objOpcode.m_nByteNum++;
+		free(strBitString);
+		idxByte++;
+		objTempByte.m_nByte=pBytes[idxByte];//possible modrm
+		strBitString=convertByteToBitString(&objTempByte);
 #ifdef _DEBUG
-		printf("\t\tPossible opcode:%s possible modrm:%s\n",cp->opcode.bytes,temp_char);
+		printf("\t\tPossible opcode:%s possible modrm:%s\n",o_pCommand->m_objOpcode.m_strBits,strBitString);
 #endif
-		if((temp_int=FindCommand(hFileOpcodes,cp->opcode.bytes,temp_char))!=-1){//command found
+		if ((nCommandOffset=findCommand(hOpcodeFile,o_pCommand->m_objOpcode.m_strBits,strBitString))!=-1){//command found
 			break;//we can exit, buf<4
 		}
-		buf++;
+		nBufferByte++;
 	}
 	
-	if(buf==3){//command not found
+	if (nBufferByte==3){//command not found
 		printf("\tError:command not found!\n");
-		fclose(hFileOpcodes);
+		fclose(hOpcodeFile);
 		return RET_ERROR;
 	}
 	//now in temp_int command position 
 #ifdef _DEBUG
-	printf("\tCommand position:%d\n",temp_int);
+	printf("\tCommand position:%d\n",nCommandOffset);
 #endif
 	/*------------------------------------------------------------command finding-----------------------------------------------------*/	
 	
 	/*------------------------------------------------------------ext parsing---------------------------------------------------------*/	
 
-	fseek(hFileOpcodes,temp_int,SEEK_SET);//fp on command field
-	ext_len=0;
-	while(1){
-		fread(&buf,1,1,hFileOpcodes);
-		if(buf==' '){//cell end
+	fseek(hOpcodeFile,nCommandOffset,SEEK_SET);//fp on command field
+	nExtensionLength=0;
+	while (1){
+		fread(&nBufferByte,1,1,hOpcodeFile);
+		if (nBufferByte==' '){//cell end
 			break;
 		}
-		switch(buf){
+		switch(nBufferByte){
 		case 's'://s
-			cp->sf.s=cp->opcode.bytes[ext_len]-'0';
+			o_pCommand->m_objSpecialFields.m_nS=o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0';
 			break;
 			
 		case 'w'://w
-			cp->sf.w=cp->opcode.bytes[ext_len]-'0';
+			o_pCommand->m_objSpecialFields.m_nW=o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0';
 			break;
 			
 		case 'd'://d
-			cp->sf.d=cp->opcode.bytes[ext_len]-'0';
+			o_pCommand->m_objSpecialFields.m_nD=o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0';
 			break;
 			
 		case 'r'://reg
-			cp->sf.reg=(cp->opcode.bytes[ext_len]-'0')*4+(cp->opcode.bytes[ext_len+1]-'0')*2+(cp->opcode.bytes[ext_len+2]-'0');
-			ext_len+=2;
-			fread(&buf,1,1,hFileOpcodes);
-			fread(&buf,1,1,hFileOpcodes);
+			o_pCommand->m_objSpecialFields.m_nReg=(o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0')*4+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+1]-'0')*2+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+2]-'0');
+			nExtensionLength+=2;
+			fread(&nBufferByte,1,1,hOpcodeFile);
+			fread(&nBufferByte,1,1,hOpcodeFile);
 			break;
 			
 		case 't'://tttn
-			cp->sf.tttn=(cp->opcode.bytes[ext_len]-'0')*8+(cp->opcode.bytes[ext_len+1]-'0')*4+(cp->opcode.bytes[ext_len+2]-'0')*2+(cp->opcode.bytes[ext_len+3]-'0');
-			ext_len+=3;
-			fread(&buf,1,1,hFileOpcodes);
-			fread(&buf,1,1,hFileOpcodes);
-			fread(&buf,1,1,hFileOpcodes);
+			o_pCommand->m_objSpecialFields.m_nTttn=(o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0')*8+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+1]-'0')*4+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+2]-'0')*2+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+3]-'0');
+			nExtensionLength+=3;
+			fread(&nBufferByte,1,1,hOpcodeFile);
+			fread(&nBufferByte,1,1,hOpcodeFile);
+			fread(&nBufferByte,1,1,hOpcodeFile);
 			break;
 		case 'e'://eee special purpose registers (cr, dr)
-			cp->sf.eee=(cp->opcode.bytes[ext_len]-'0')*4+(cp->opcode.bytes[ext_len+1]-'0')*2+(cp->opcode.bytes[ext_len+2]-'0');
-			ext_len+=2;
-			fread(&buf,1,1,hFileOpcodes);
-			fread(&buf,1,1,hFileOpcodes);
+			o_pCommand->m_objSpecialFields.m_nEee=(o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0')*4+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+1]-'0')*2+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+2]-'0');
+			nExtensionLength+=2;
+			fread(&nBufferByte,1,1,hOpcodeFile);
+			fread(&nBufferByte,1,1,hOpcodeFile);
 			break;
 		case 'f'://ff-sreg2(2 bits) 
-			cp->sf.ff=(cp->opcode.bytes[ext_len]-'0')*2+(cp->opcode.bytes[ext_len+1]-'0');
-			ext_len+=1;
-			fread(&buf,1,1,hFileOpcodes);
+			o_pCommand->m_objSpecialFields.m_nFf=(o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0')*2+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+1]-'0');
+			nExtensionLength+=1;
+			fread(&nBufferByte,1,1,hOpcodeFile);
 			break;
 		case 'u'://uuu-sreg3(3 bits)
-			cp->sf.uuu=(cp->opcode.bytes[ext_len]-'0')*4+(cp->opcode.bytes[ext_len+1]-'0')*2+(cp->opcode.bytes[ext_len+2]-'0');
-			ext_len+=2;
-			fread(&buf,1,1,hFileOpcodes);
-			fread(&buf,1,1,hFileOpcodes);
+			o_pCommand->m_objSpecialFields.m_nUuu=(o_pCommand->m_objOpcode.m_strBits[nExtensionLength]-'0')*4+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+1]-'0')*2+(o_pCommand->m_objOpcode.m_strBits[nExtensionLength+2]-'0');
+			nExtensionLength+=2;
+			fread(&nBufferByte,1,1,hOpcodeFile);
+			fread(&nBufferByte,1,1,hOpcodeFile);
 			break;
 			/*default:
 			printf("\tError:cant find ext. buf=%c\n",buf);
 			getch();
 			return -1;*/	
 		}
-		ext_len++;
+		++nExtensionLength;
 	}
 	/*------------------------------------------------------------ext parsing---------------------------------------------------------*/	
 	/*----------------------------------------------------------modrm parsing---------------------------------------------------------*/	
-	fseek(hFileOpcodes,temp_int+MODRM_FIELD_OFFSET,SEEK_SET);//check modrm is present
-	fread(&buf,1,1,hFileOpcodes);
-	if(buf!=' '){//modrm is here
-		cp->modrm.modrm=mp[bytecounter];
-		cp->modrm.mod=(temp_char[0]-'0')*2+(temp_char[1]-'0');
-		cp->modrm.reg=(temp_char[2]-'0')*4+(temp_char[3]-'0')*2+(temp_char[4]-'0');
-		cp->modrm.rm=(temp_char[5]-'0')*4+(temp_char[6]-'0')*2+(temp_char[7]-'0');
-		bytecounter++;
+	fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET,SEEK_SET);//check modrm is present
+	fread(&nBufferByte,1,1,hOpcodeFile);
+	if (nBufferByte!=' '){//modrm is here
+		o_pCommand->m_objModrm.m_nModrm=pBytes[idxByte];
+		o_pCommand->m_objModrm.m_nMod=(strBitString[0]-'0')*2+(strBitString[1]-'0');
+		o_pCommand->m_objModrm.m_nReg=(strBitString[2]-'0')*4+(strBitString[3]-'0')*2+(strBitString[4]-'0');
+		o_pCommand->m_objModrm.m_nRm=(strBitString[5]-'0')*4+(strBitString[6]-'0')*2+(strBitString[7]-'0');
+		idxByte++;
 	}
-	free(temp_char);//temp_char:possible modrm
+	free(strBitString);//temp_char:possible modrm
 #ifdef _DEBUG
-	printf("\tMODRM:mod:%d reg:%d rm:%d\n",cp->modrm.mod,cp->modrm.reg,cp->modrm.rm);
+	printf("\tMODRM:mod:%d reg:%d rm:%d\n",o_pCommand->m_objModrm.m_nMod,o_pCommand->m_objModrm.m_nReg,o_pCommand->m_objModrm.m_nRm);
 #endif
 	/*----------------------------------------------------------modrm parsing---------------------------------------------------------*/
 
 	/*--------------------------------------------------------command parsing---------------------------------------------------------*/
-	fseek(hFileOpcodes,temp_int+DESCRIPTION_FIELD_OFFSET,SEEK_SET);
+	fseek(hOpcodeFile,nCommandOffset+DESCRIPTION_FIELD_OFFSET,SEEK_SET);
 	//printf("\tfseek=%d temp_int+DESCRIPTION_FIELD_OFFSET=%d\n",ftell(hFileOpcodes),temp_int+DESCRIPTION_FIELD_OFFSET);
-	ext_len=0;
-	while(1){//readindg command
-		fread(&buf,1,1,hFileOpcodes);
-		if(buf==' '){
+	nExtensionLength=0;
+	while (1){//readindg command
+		fread(&nBufferByte,1,1,hOpcodeFile);
+		if (nBufferByte==' '){
 			break;
 		}
-		cp->com_text=(char*)realloc( cp->com_text,ext_len+2);
-		cp->com_text[ext_len]=buf;
-		ext_len++;
+		o_pCommand->m_strCommandText=(char*)realloc( o_pCommand->m_strCommandText,nExtensionLength+2);
+		o_pCommand->m_strCommandText[nExtensionLength]=nBufferByte;
+		nExtensionLength++;
 	}
-	cp->com_text[ext_len]=0;
+	o_pCommand->m_strCommandText[nExtensionLength]=0;
 #ifdef _DEBUG
-	printf("\tcom_text:%s\n",cp->com_text);
+	printf("\tcom_text:%s\n",o_pCommand->m_strCommandText);
 #endif
 	/*--------------------------------------------------------command parsing---------------------------------------------------------*/
 
 	/*--------------------------------------------------------operand parsing---------------------------------------------------------*/
 	//operands reading------------
-	ext_len=0;
-	while(1){
-		cp->par=(char*)realloc(cp->par,ext_len+2);
-		fread(&buf,1,1,hFileOpcodes);
-		if(buf==' '){// no operands | file end
+	nExtensionLength=0;
+	while (1){
+		o_pCommand->m_strParameters=(char*)realloc(o_pCommand->m_strParameters,nExtensionLength+2);
+		fread(&nBufferByte,1,1,hOpcodeFile);
+		if (nBufferByte==' '){// no operands | file end
 			break;
 		}
 		
-		cp->par[ext_len]=buf;
-		cp->par_count++;
-		ext_len++;
+		o_pCommand->m_strParameters[nExtensionLength]=nBufferByte;
+		o_pCommand->m_nParameterCount++;
+		nExtensionLength++;
 	}	
-	cp->par[ext_len]=0;
+	o_pCommand->m_strParameters[nExtensionLength]=0;
 	
 	//exchanging if d==0---------------------	
-	if((cp->sf.d==0) && (cp->par_count>=2)){//exchanging ('d' field) if not immediate as 1st par
-		if(cp->par[1]!='i'){
-			buf=cp->par[1];
-			cp->par[1]=cp->par[0];
-			cp->par[0]=buf;
+	if ((o_pCommand->m_objSpecialFields.m_nD==0) && (o_pCommand->m_nParameterCount>=2)){//exchanging ('d' field) if not immediate as 1st par
+		if (o_pCommand->m_strParameters[1]!='i'){
+			nBufferByte=o_pCommand->m_strParameters[1];
+			o_pCommand->m_strParameters[1]=o_pCommand->m_strParameters[0];
+			o_pCommand->m_strParameters[0]=nBufferByte;
 		}
 	}
 	
-	cp->parameters=(char**)malloc(sizeof(char*)*(cp->par_count));//memory allocating
-	ext_len=0;
-	while(ext_len<cp->par_count){
-		cp->parameters[ext_len]=(char*)malloc(40);//[eax+ebx*1+0FFFFFFFF],0
-		ext_len++;
+	o_pCommand->m_pParameters=(char**)malloc(sizeof(char*)*(o_pCommand->m_nParameterCount));//memory allocating
+	nExtensionLength=0;
+	while (nExtensionLength<o_pCommand->m_nParameterCount){
+		o_pCommand->m_pParameters[nExtensionLength]=(char*)malloc(40);//[eax+ebx*1+0FFFFFFFF],0
+		nExtensionLength++;
 	}
 	//printf("DEBUG");	
 	//-----------------------------------------------operands parsing----------------------------------------------------------------------------------------------------------------------------------------------------------	
-	while(counter<cp->par_count){
-		switch(cp->par[counter]){
+	while (idxOperand<o_pCommand->m_nParameterCount){
+		switch(o_pCommand->m_strParameters[idxOperand]){
 			
 		case 'r'://reg1
-			if(cp->sf.reg!=-128){//reg (reg field is always last 3 bytes of opcode)
-				ext_len=cp->sf.reg;
+			if (o_pCommand->m_objSpecialFields.m_nReg!=-128){//reg (reg field is always last 3 bytes of opcode)
+				nExtensionLength=o_pCommand->m_objSpecialFields.m_nReg;
 				//printf("\t\tpos in ret:%d temp_char:%s\n",Find(hFileRet,temp_char1),temp_char1);
 			}else{//search in mod/opcode section
-				fseek(hFileOpcodes,temp_int+MODRM_FIELD_OFFSET+3,SEEK_SET);//fp on mod/opcode section
-				fread(&buf,1,1,hFileOpcodes);
-				if(buf=='r'){
+				fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+3,SEEK_SET);//fp on mod/opcode section
+				fread(&nBufferByte,1,1,hOpcodeFile);
+				if (nBufferByte=='r'){
 					//check if reg1
-					fseek(hFileOpcodes,temp_int+MODRM_FIELD_OFFSET+6,SEEK_SET);
-					fread(&buf,1,1,hFileOpcodes);
-					if(buf=='1' || buf==' '){//reg1 | reg
-						ext_len=cp->modrm.reg;
+					fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+6,SEEK_SET);
+					fread(&nBufferByte,1,1,hOpcodeFile);
+					if (nBufferByte=='1' || nBufferByte==' '){//reg1 | reg
+						nExtensionLength=o_pCommand->m_objModrm.m_nReg;
 					}else{//reg1 in rm section
-						ext_len=cp->modrm.rm;
+						nExtensionLength=o_pCommand->m_objModrm.m_nRm;
 					}
 				}else{//reg1 in rm section
-					ext_len=cp->modrm.rm;
+					nExtensionLength=o_pCommand->m_objModrm.m_nRm;
 				}
 			}
 			//in ext_len number of register
-			switch(ext_len){
+			switch (nExtensionLength){
 			case 0://al ax eax
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='a';
-					cp->parameters[counter][1]='l';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='a';
+					o_pCommand->m_pParameters[idxOperand][1]='l';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='a';
-						cp->parameters[counter][1]='x';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='a';
+						o_pCommand->m_pParameters[idxOperand][1]='x';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='a';
-						cp->parameters[counter][2]='x';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='a';
+						o_pCommand->m_pParameters[idxOperand][2]='x';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 			case 1://ecx
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='c';
-					cp->parameters[counter][1]='l';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='c';
+					o_pCommand->m_pParameters[idxOperand][1]='l';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='c';
-						cp->parameters[counter][1]='x';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='c';
+						o_pCommand->m_pParameters[idxOperand][1]='x';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='c';
-						cp->parameters[counter][2]='x';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='c';
+						o_pCommand->m_pParameters[idxOperand][2]='x';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 				
 				
 			case 2://edx
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='d';
-					cp->parameters[counter][1]='l';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='d';
+					o_pCommand->m_pParameters[idxOperand][1]='l';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='d';
-						cp->parameters[counter][1]='x';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='d';
+						o_pCommand->m_pParameters[idxOperand][1]='x';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='d';
-						cp->parameters[counter][2]='x';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='d';
+						o_pCommand->m_pParameters[idxOperand][2]='x';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 
 			case 3://ebx
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='b';
-					cp->parameters[counter][1]='l';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='b';
+					o_pCommand->m_pParameters[idxOperand][1]='l';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='b';
-						cp->parameters[counter][1]='x';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='b';
+						o_pCommand->m_pParameters[idxOperand][1]='x';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='b';
-						cp->parameters[counter][2]='x';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='b';
+						o_pCommand->m_pParameters[idxOperand][2]='x';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 
 			case 4://esp
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='s';
-					cp->parameters[counter][1]='d';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='s';
+					o_pCommand->m_pParameters[idxOperand][1]='d';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='s';
-						cp->parameters[counter][1]='p';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='s';
+						o_pCommand->m_pParameters[idxOperand][1]='p';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='s';
-						cp->parameters[counter][2]='p';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='s';
+						o_pCommand->m_pParameters[idxOperand][2]='p';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;						
 				
 			case 5://ebp
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='b';
-					cp->parameters[counter][1]='d';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='b';
+					o_pCommand->m_pParameters[idxOperand][1]='d';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='b';
-						cp->parameters[counter][1]='p';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='b';
+						o_pCommand->m_pParameters[idxOperand][1]='p';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='b';
-						cp->parameters[counter][2]='p';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='b';
+						o_pCommand->m_pParameters[idxOperand][2]='p';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 				
 			case 6://esi
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='e';
-					cp->parameters[counter][1]='d';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='e';
+					o_pCommand->m_pParameters[idxOperand][1]='d';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='s';
-						cp->parameters[counter][1]='i';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='s';
+						o_pCommand->m_pParameters[idxOperand][1]='i';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='s';
-						cp->parameters[counter][2]='i';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='s';
+						o_pCommand->m_pParameters[idxOperand][2]='i';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 				
 			case 7://edi
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='d';
-					cp->parameters[counter][1]='d';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='d';
+					o_pCommand->m_pParameters[idxOperand][1]='d';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='d';
-						cp->parameters[counter][1]='i';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='d';
+						o_pCommand->m_pParameters[idxOperand][1]='i';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='d';
-						cp->parameters[counter][2]='i';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='d';
+						o_pCommand->m_pParameters[idxOperand][2]='i';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
@@ -739,177 +746,177 @@ int SCommand_GetCommand(SCommand*cp,FILE*i_hFileTargetPE){
 			
 			//------------------------------------reg2----------------------------------------------------------------------			
 		case 'p'://reg2
-			fseek(hFileOpcodes,temp_int+MODRM_FIELD_OFFSET+3,SEEK_SET);//fp on reg/opcode section
-			fread(&buf,1,1,hFileOpcodes);
-			if(buf=='r'){//check if reg2
-				fseek(hFileOpcodes,temp_int+MODRM_FIELD_OFFSET+6,SEEK_SET);
-				fread(&buf,1,1,hFileOpcodes);
-				if(buf=='2'){//reg2
-					ext_len=cp->modrm.reg;
+			fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+3,SEEK_SET);//fp on reg/opcode section
+			fread(&nBufferByte,1,1,hOpcodeFile);
+			if (nBufferByte=='r'){//check if reg2
+				fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+6,SEEK_SET);
+				fread(&nBufferByte,1,1,hOpcodeFile);
+				if (nBufferByte=='2'){//reg2
+					nExtensionLength=o_pCommand->m_objModrm.m_nReg;
 				}else{//reg2 in rm section
-					ext_len=cp->modrm.rm;
+					nExtensionLength=o_pCommand->m_objModrm.m_nRm;
 				}
 			}else{//reg2 in rm section
-				ext_len=cp->modrm.rm;
+				nExtensionLength=o_pCommand->m_objModrm.m_nRm;
 			}	
 			//in ext_len number of register
-			switch(ext_len){
+			switch (nExtensionLength){
 			case 0://al ax eax
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='a';
-					cp->parameters[counter][1]='l';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='a';
+					o_pCommand->m_pParameters[idxOperand][1]='l';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='a';
-						cp->parameters[counter][1]='x';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='a';
+						o_pCommand->m_pParameters[idxOperand][1]='x';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='a';
-						cp->parameters[counter][2]='x';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='a';
+						o_pCommand->m_pParameters[idxOperand][2]='x';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 			case 1://ecx
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='c';
-					cp->parameters[counter][1]='l';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='c';
+					o_pCommand->m_pParameters[idxOperand][1]='l';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='c';
-						cp->parameters[counter][1]='x';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='c';
+						o_pCommand->m_pParameters[idxOperand][1]='x';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='c';
-						cp->parameters[counter][2]='x';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='c';
+						o_pCommand->m_pParameters[idxOperand][2]='x';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 				
 				
 			case 2://edx
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='d';
-					cp->parameters[counter][1]='l';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='d';
+					o_pCommand->m_pParameters[idxOperand][1]='l';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='d';
-						cp->parameters[counter][1]='x';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='d';
+						o_pCommand->m_pParameters[idxOperand][1]='x';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='d';
-						cp->parameters[counter][2]='x';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='d';
+						o_pCommand->m_pParameters[idxOperand][2]='x';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 
 			case 3://ebx
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='b';
-					cp->parameters[counter][1]='l';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='b';
+					o_pCommand->m_pParameters[idxOperand][1]='l';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='b';
-						cp->parameters[counter][1]='x';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='b';
+						o_pCommand->m_pParameters[idxOperand][1]='x';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='b';
-						cp->parameters[counter][2]='x';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='b';
+						o_pCommand->m_pParameters[idxOperand][2]='x';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 
 			case 4://esp
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='s';
-					cp->parameters[counter][1]='d';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='s';
+					o_pCommand->m_pParameters[idxOperand][1]='d';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='s';
-						cp->parameters[counter][1]='p';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='s';
+						o_pCommand->m_pParameters[idxOperand][1]='p';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='s';
-						cp->parameters[counter][2]='p';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='s';
+						o_pCommand->m_pParameters[idxOperand][2]='p';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;						
 				
 			case 5://ebp
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='b';
-					cp->parameters[counter][1]='d';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='b';
+					o_pCommand->m_pParameters[idxOperand][1]='d';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='b';
-						cp->parameters[counter][1]='p';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='b';
+						o_pCommand->m_pParameters[idxOperand][1]='p';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='b';
-						cp->parameters[counter][2]='p';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='b';
+						o_pCommand->m_pParameters[idxOperand][2]='p';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 				
 			case 6://esi
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='e';
-					cp->parameters[counter][1]='d';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='e';
+					o_pCommand->m_pParameters[idxOperand][1]='d';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='s';
-						cp->parameters[counter][1]='i';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='s';
+						o_pCommand->m_pParameters[idxOperand][1]='i';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='s';
-						cp->parameters[counter][2]='i';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='s';
+						o_pCommand->m_pParameters[idxOperand][2]='i';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
 				
 			case 7://edi
-				if(cp->sf.w==0){
-					cp->parameters[counter][0]='d';
-					cp->parameters[counter][1]='d';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objSpecialFields.m_nW==0){
+					o_pCommand->m_pParameters[idxOperand][0]='d';
+					o_pCommand->m_pParameters[idxOperand][1]='d';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{
-					if(cp->prefix.opr==0x66){//66h - operand-size prefix
-						cp->parameters[counter][0]='d';
-						cp->parameters[counter][1]='i';
-						cp->parameters[counter][2]=0;
+					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
+						o_pCommand->m_pParameters[idxOperand][0]='d';
+						o_pCommand->m_pParameters[idxOperand][1]='i';
+						o_pCommand->m_pParameters[idxOperand][2]=0;
 						break;
 					}else{
-						cp->parameters[counter][0]='e';
-						cp->parameters[counter][1]='d';
-						cp->parameters[counter][2]='i';
-						cp->parameters[counter][3]=0;
+						o_pCommand->m_pParameters[idxOperand][0]='e';
+						o_pCommand->m_pParameters[idxOperand][1]='d';
+						o_pCommand->m_pParameters[idxOperand][2]='i';
+						o_pCommand->m_pParameters[idxOperand][3]=0;
 					}
 				}
 				break;
@@ -918,175 +925,175 @@ int SCommand_GetCommand(SCommand*cp,FILE*i_hFileTargetPE){
 			
 			//-------------------------------------------------------------sreg----------------------------------------------			
 		case 's'://sreg
-			if(cp->sf.ff!=-128){
-				ext_len=cp->sf.ff;
+			if (o_pCommand->m_objSpecialFields.m_nFf!=-128){
+				nExtensionLength=o_pCommand->m_objSpecialFields.m_nFf;
 			}else{
-				if(cp->sf.uuu!=-128){
-					ext_len=cp->sf.uuu;
+				if (o_pCommand->m_objSpecialFields.m_nUuu!=-128){
+					nExtensionLength=o_pCommand->m_objSpecialFields.m_nUuu;
 				}else{
-					fseek(hFileOpcodes,temp_int+MODRM_FIELD_OFFSET+3,SEEK_SET);//fp on mod/opcode section
-					fread(&buf,1,1,hFileOpcodes);
-					if(buf=='s'){
-						ext_len=cp->modrm.reg;
+					fseek(hOpcodeFile,nCommandOffset+MODRM_FIELD_OFFSET+3,SEEK_SET);//fp on mod/opcode section
+					fread(&nBufferByte,1,1,hOpcodeFile);
+					if (nBufferByte=='s'){
+						nExtensionLength=o_pCommand->m_objModrm.m_nReg;
 						//printf("\t\tDEBUG\n");
 					}else{//sreg in rm section
-						ext_len=cp->modrm.rm;
+						nExtensionLength=o_pCommand->m_objModrm.m_nRm;
 						//printf("\t\tDEBUG\n");
 					}
 				}
 			}
 			//in ext_len number of register
-			switch(ext_len){
+			switch(nExtensionLength){
 			case 0://es
-				cp->parameters[counter][0]='e';
-				cp->parameters[counter][1]='s';
-				cp->parameters[counter][2]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='e';
+				o_pCommand->m_pParameters[idxOperand][1]='s';
+				o_pCommand->m_pParameters[idxOperand][2]=0;
 				break;
 				
 			case 1://cs
-				cp->parameters[counter][0]='c';
-				cp->parameters[counter][1]='s';
-				cp->parameters[counter][2]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='c';
+				o_pCommand->m_pParameters[idxOperand][1]='s';
+				o_pCommand->m_pParameters[idxOperand][2]=0;
 				break;
 				
 			case 2://ss
-				cp->parameters[counter][0]='s';
-				cp->parameters[counter][1]='s';
-				cp->parameters[counter][2]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='s';
+				o_pCommand->m_pParameters[idxOperand][1]='s';
+				o_pCommand->m_pParameters[idxOperand][2]=0;
 				break;
 
 			case 3://ds
-				cp->parameters[counter][0]='d';
-				cp->parameters[counter][1]='s';
-				cp->parameters[counter][2]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='d';
+				o_pCommand->m_pParameters[idxOperand][1]='s';
+				o_pCommand->m_pParameters[idxOperand][2]=0;
 				break;
 
 			case 4://fs
-				cp->parameters[counter][0]='f';
-				cp->parameters[counter][1]='s';
-				cp->parameters[counter][2]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='f';
+				o_pCommand->m_pParameters[idxOperand][1]='s';
+				o_pCommand->m_pParameters[idxOperand][2]=0;
 				break;						
 				
 			case 5://gs
-				cp->parameters[counter][0]='g';
-				cp->parameters[counter][1]='s';
-				cp->parameters[counter][2]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='g';
+				o_pCommand->m_pParameters[idxOperand][1]='s';
+				o_pCommand->m_pParameters[idxOperand][2]=0;
 				break;
 				
 			case 6://reserved1
-				fclose(hFileOpcodes);
-				free(mp);
+				fclose(hOpcodeFile);
+				free(pBytes);
 				return RET_ERROR;//error
 				break;
 				
 			case 7://reserved2
 				return RET_ERROR;//error
-				fclose(hFileOpcodes);
-				free(mp);
+				fclose(hOpcodeFile);
+				free(pBytes);
 				break;
 			}
 			break;
 			
 			//---------------------------------------------------- 1 ------------------------------------------------------			
 		case '1':
-			cp->parameters[counter][0]='1';
-			cp->parameters[counter][1]=0;
+			o_pCommand->m_pParameters[idxOperand][0]='1';
+			o_pCommand->m_pParameters[idxOperand][1]=0;
 			break;
 			
 			//-------------------------------------------------al ax eax---------------------------------------------------
 		case 'a':
-			if(cp->sf.w==0){//al
-				cp->parameters[counter][0]='a';
-				cp->parameters[counter][1]='l';
-				cp->parameters[counter][2]=0;
+			if (o_pCommand->m_objSpecialFields.m_nW==0){//al
+				o_pCommand->m_pParameters[idxOperand][0]='a';
+				o_pCommand->m_pParameters[idxOperand][1]='l';
+				o_pCommand->m_pParameters[idxOperand][2]=0;
 			}else{
-				if(cp->prefix.opr==0x66){//ax
-					cp->parameters[counter][0]='a';
-					cp->parameters[counter][1]='x';
-					cp->parameters[counter][2]=0;
+				if (o_pCommand->m_objPrefix.m_nOpr==0x66){//ax
+					o_pCommand->m_pParameters[idxOperand][0]='a';
+					o_pCommand->m_pParameters[idxOperand][1]='x';
+					o_pCommand->m_pParameters[idxOperand][2]=0;
 				}else{//eax
-					cp->parameters[counter][0]='e';
-					cp->parameters[counter][1]='a';
-					cp->parameters[counter][2]='x';
-					cp->parameters[counter][3]=0;
+					o_pCommand->m_pParameters[idxOperand][0]='e';
+					o_pCommand->m_pParameters[idxOperand][1]='a';
+					o_pCommand->m_pParameters[idxOperand][2]='x';
+					o_pCommand->m_pParameters[idxOperand][3]=0;
 				}
 			}
 			break;
 			//------------------------------------------------- cl ---------------------------------------------------			
 		case 'b'://cl
-			cp->parameters[counter][0]='c';
-			cp->parameters[counter][1]='l';
-			cp->parameters[counter][2]=0;
+			o_pCommand->m_pParameters[idxOperand][0]='c';
+			o_pCommand->m_pParameters[idxOperand][1]='l';
+			o_pCommand->m_pParameters[idxOperand][2]=0;
 			break;
 			
 			//------------------------------------------------- dr0-7 ---------------------------------------------------
 		case 'd'://dr0-7		
-			if(cp->sf.eee!=-128){
-				ext_len=cp->sf.eee;
+			if (o_pCommand->m_objSpecialFields.m_nEee!=-128){
+				nExtensionLength=o_pCommand->m_objSpecialFields.m_nEee;
 			}else{
-				fseek(hFileOpcodes,MODRM_FIELD_OFFSET+3,SEEK_SET);
-				fread(&buf,1,1,hFileOpcodes);
-				if(buf=='e'){//eee
-					ext_len=cp->modrm.reg;
+				fseek(hOpcodeFile,MODRM_FIELD_OFFSET+3,SEEK_SET);
+				fread(&nBufferByte,1,1,hOpcodeFile);
+				if (nBufferByte=='e'){//eee
+					nExtensionLength=o_pCommand->m_objModrm.m_nReg;
 				}else{//in rm field
-					ext_len=cp->modrm.rm;
+					nExtensionLength=o_pCommand->m_objModrm.m_nRm;
 				}
 			}
-			switch(ext_len){
+			switch(nExtensionLength){
 			case 0://dr0
-				cp->parameters[counter][0]='d';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='0';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='d';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='0';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 				
 			case 1://dr1
-				cp->parameters[counter][0]='d';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='1';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='d';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='1';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 				
 			case 2://dr2
-				cp->parameters[counter][0]='d';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='2';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='d';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='2';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 
 			case 3://dr3
-				cp->parameters[counter][0]='d';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='3';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='d';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='3';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 
 			case 4://dr4
-				cp->parameters[counter][0]='d';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='4';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='d';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='4';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;						
 				
 			case 5://dr5
-				cp->parameters[counter][0]='d';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='5';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='d';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='5';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 				
 			case 6://dr6
-				cp->parameters[counter][0]='d';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='6';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='d';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='6';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 				
 			case 7://dr7
-				cp->parameters[counter][0]='d';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='7';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='d';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='7';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 			}
 			break;
@@ -1095,1134 +1102,1133 @@ int SCommand_GetCommand(SCommand*cp,FILE*i_hFileTargetPE){
 #ifdef _DEBUG
 			printf("\toperand1:cr0-7\n");
 #endif
-			if(cp->sf.eee!=-128){
-				ext_len=cp->sf.eee;
+			if (o_pCommand->m_objSpecialFields.m_nEee!=-128){
+				nExtensionLength=o_pCommand->m_objSpecialFields.m_nEee;
 			}else{
-				fseek(hFileOpcodes,MODRM_FIELD_OFFSET+3,SEEK_SET);
-				fread(&buf,1,1,hFileOpcodes);
-				if(buf=='e'){//eee
-					ext_len=cp->modrm.reg;
+				fseek(hOpcodeFile,MODRM_FIELD_OFFSET+3,SEEK_SET);
+				fread(&nBufferByte,1,1,hOpcodeFile);
+				if (nBufferByte=='e'){//eee
+					nExtensionLength=o_pCommand->m_objModrm.m_nReg;
 				}else{//in rm field
-					ext_len=cp->modrm.rm;
+					nExtensionLength=o_pCommand->m_objModrm.m_nRm;
 				}
 			}
-			switch(ext_len){
+			switch(nExtensionLength){
 			case 0://cr0
-				cp->parameters[counter][0]='c';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='0';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='c';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='0';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 				
 			case 1://cr1
-				cp->parameters[counter][0]='c';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='1';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='c';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='1';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 				
 			case 2://cr2
-				cp->parameters[counter][0]='c';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='2';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='c';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='2';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 
 			case 3://cr3
-				cp->parameters[counter][0]='c';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='3';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='c';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='3';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 
 			case 4://cr4
-				cp->parameters[counter][0]='c';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='4';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='c';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='4';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;						
 				
 			case 5://cr5
-				cp->parameters[counter][0]='c';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='5';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='c';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='5';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 				
 			case 6://cr6
-				cp->parameters[counter][0]='c';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='6';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='c';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='6';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 				
 			case 7://cr7
-				cp->parameters[counter][0]='c';
-				cp->parameters[counter][1]='r';
-				cp->parameters[counter][2]='7';
-				cp->parameters[counter][3]=0;
+				o_pCommand->m_pParameters[idxOperand][0]='c';
+				o_pCommand->m_pParameters[idxOperand][1]='r';
+				o_pCommand->m_pParameters[idxOperand][2]='7';
+				o_pCommand->m_pParameters[idxOperand][3]=0;
 				break;
 			}
 			break;
 			
 			//------------------------------------------------- memory ---------------------------------------------------				
 		case 'm'://0x67, 0x66, segment redefinition prefixes affects
-			if(cp->sf.w==0){//1 byte operand 
-				cp->parameters[counter][0]='B';
-				cp->parameters[counter][1]='Y';
-				cp->parameters[counter][2]='T';
-				cp->parameters[counter][3]='E';
-				com_len=4;
+			if (o_pCommand->m_objSpecialFields.m_nW==0){//1 byte operand
+				o_pCommand->m_pParameters[idxOperand][0]='B';
+				o_pCommand->m_pParameters[idxOperand][1]='Y';
+				o_pCommand->m_pParameters[idxOperand][2]='T';
+				o_pCommand->m_pParameters[idxOperand][3]='E';
+				nCommandLength=4;
 			}else{//2|4 byte operand 
-				if(cp->prefix.opr==0x66){//0x66 -2byte
-					cp->parameters[counter][0]='W';
-					cp->parameters[counter][1]='O';
-					cp->parameters[counter][2]='R';
-					cp->parameters[counter][3]='D';
-					com_len=4;
+				if (o_pCommand->m_objPrefix.m_nOpr==0x66){//0x66 -2byte
+					o_pCommand->m_pParameters[idxOperand][0]='W';
+					o_pCommand->m_pParameters[idxOperand][1]='O';
+					o_pCommand->m_pParameters[idxOperand][2]='R';
+					o_pCommand->m_pParameters[idxOperand][3]='D';
+					nCommandLength=4;
 				}else{//no 0x66 -4byte
-					cp->parameters[counter][0]='D';
-					cp->parameters[counter][1]='W';
-					cp->parameters[counter][2]='O';
-					cp->parameters[counter][3]='R';
-					cp->parameters[counter][4]='D';
-					com_len=5;
+					o_pCommand->m_pParameters[idxOperand][0]='D';
+					o_pCommand->m_pParameters[idxOperand][1]='W';
+					o_pCommand->m_pParameters[idxOperand][2]='O';
+					o_pCommand->m_pParameters[idxOperand][3]='R';
+					o_pCommand->m_pParameters[idxOperand][4]='D';
+					nCommandLength=5;
 				}
 			}
 
-			cp->parameters[counter][com_len]='_';
-			cp->parameters[counter][com_len+1]='P';
-			cp->parameters[counter][com_len+2]='T';
-			cp->parameters[counter][com_len+3]='R';
-			cp->parameters[counter][com_len+4]='_';
-			com_len+=5;
+			o_pCommand->m_pParameters[idxOperand][nCommandLength]='_';
+			o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='P';
+			o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='T';
+			o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='R';
+			o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='_';
+			nCommandLength+=5;
 
-			switch(cp->prefix.segr){
+			switch(o_pCommand->m_objPrefix.m_nSegr){
 			case 0x2e: //cs
-				cp->parameters[counter][com_len]='C';
+				o_pCommand->m_pParameters[idxOperand][nCommandLength]='C';
 				break;
 			case 0x36://ss
-				cp->parameters[counter][com_len]='S';
+				o_pCommand->m_pParameters[idxOperand][nCommandLength]='S';
 				
 				break;
 			case 0x26: //es
-				cp->parameters[counter][com_len]='E';
+				o_pCommand->m_pParameters[idxOperand][nCommandLength]='E';
 				
 				break;
 			case 0x64: //fs
-				cp->parameters[counter][com_len]='C';
+				o_pCommand->m_pParameters[idxOperand][nCommandLength]='C';
 				
 				break;
 			case 0x65: //gs
-				cp->parameters[counter][com_len]='G';
+				o_pCommand->m_pParameters[idxOperand][nCommandLength]='G';
 				break;
 			default: //ds
-				cp->parameters[counter][com_len]='D';
+				o_pCommand->m_pParameters[idxOperand][nCommandLength]='D';
 				break;
 			}
 
-			cp->parameters[counter][com_len+1]='S';
-			cp->parameters[counter][com_len+2]=':';
-			cp->parameters[counter][com_len+3]='[';
-			com_len+=3;
+			o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='S';
+			o_pCommand->m_pParameters[idxOperand][nCommandLength+2]=':';
+			o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='[';
+			nCommandLength+=3;
 
-			if(cp->prefix.sr!=0x67){//0x67 not present 
-				cp->parameters[counter][com_len+1]='e';
-				switch(cp->modrm.rm){
+			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//0x67 not present
+				o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='e';
+				switch(o_pCommand->m_objModrm.m_nRm){
 				case 0://eax
-					cp->parameters[counter][com_len+2]='a';
-					cp->parameters[counter][com_len+3]='x';
-					buf=4;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='a';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+					nBufferByte=4;
 					break;
 					
 				case 1://ecx
-					cp->parameters[counter][com_len+2]='c';
-					cp->parameters[counter][com_len+3]='x';
-					buf=4;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='c';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+					nBufferByte=4;
 					break;
 					
 				case 2://edx
-					cp->parameters[counter][com_len+2]='d';
-					cp->parameters[counter][com_len+3]='x';
-					buf=4;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='d';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+					nBufferByte=4;
 					break;
 					
 				case 3://ebx
-					cp->parameters[counter][com_len+2]='b';
-					cp->parameters[counter][com_len+3]='x';
-					buf=4;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='b';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
+					nBufferByte=4;
 					break;
 					
 				case 4://SIB
-					cp->sib.scale=mp[bytecounter]/64;
-					cp->sib.index=mp[bytecounter]/8-(mp[bytecounter]/64)*8;
-					cp->sib.base=mp[bytecounter]%8;
-					cp->sib.sib=mp[bytecounter];
-					bytecounter++;//SIB parsed
+					o_pCommand->m_objSib.m_nScale=pBytes[idxByte]/64;
+					o_pCommand->m_objSib.m_nIndex=pBytes[idxByte]/8-(pBytes[idxByte]/64)*8;
+					o_pCommand->m_objSib.m_nBase=pBytes[idxByte]%8;
+					o_pCommand->m_objSib.m_nSib=pBytes[idxByte];
+					idxByte++;//SIB parsed
 
 					//cp->parameters[counter][1]='e';
-					switch(cp->sib.base){
+					switch(o_pCommand->m_objSib.m_nBase){
 					case 0:
-						cp->parameters[counter][com_len+2]='a';
-						cp->parameters[counter][com_len+3]='x';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='a';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
 						break;
 						
 					case 1:
-						cp->parameters[counter][com_len+2]='c';
-						cp->parameters[counter][com_len+3]='x';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='c';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
 						break;
 						
 					case 2:
-						cp->parameters[counter][com_len+2]='d';
-						cp->parameters[counter][com_len+3]='x';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='d';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
 						break;
 						
 					case 3:
-						cp->parameters[counter][com_len+2]='b';
-						cp->parameters[counter][com_len+3]='x';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='b';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='x';
 						break;
 						
 					case 4:
-						cp->parameters[counter][com_len+2]='s';
-						cp->parameters[counter][com_len+3]='p';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='s';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='p';
 						break;
 						
 					case 5://[*]
-						cp->parameters[counter][com_len+2]='b';
-						cp->parameters[counter][com_len+3]='p';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='b';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='p';
 						break;
 						
 					case 6:
-						cp->parameters[counter][com_len+2]='s';
-						cp->parameters[counter][com_len+3]='i';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='s';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='i';
 						break;
 						
 					case 7:
-						cp->parameters[counter][com_len+2]='d';
-						cp->parameters[counter][com_len+3]='i';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='d';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='i';
 						break;
 					}
 					
-					cp->parameters[counter][com_len+4]='+';
-					cp->parameters[counter][com_len+5]='e';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='+';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+5]='e';
 					
-					switch(cp->sib.index){
+					switch(o_pCommand->m_objSib.m_nIndex){
 					case 0:
-						cp->parameters[counter][com_len+6]='a';
-						cp->parameters[counter][com_len+7]='x';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='a';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='x';
 						break;
 						
 					case 1:
-						cp->parameters[counter][com_len+6]='c';
-						cp->parameters[counter][com_len+7]='x';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='c';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='x';
 						break;
 						
 					case 2:
-						cp->parameters[counter][com_len+6]='d';
-						cp->parameters[counter][com_len+7]='x';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='d';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='x';
 						break;
 						
 					case 3:
-						cp->parameters[counter][com_len+6]='b';
-						cp->parameters[counter][com_len+7]='x';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='b';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='x';
 						break;
 						
 					case 4:
-						cp->parameters[counter][com_len+6]='s';
-						cp->parameters[counter][com_len+7]='p';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='s';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='p';
 						break;
 						
 					case 5://[*]
-						cp->parameters[counter][com_len+6]='b';
-						cp->parameters[counter][com_len+7]='p';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='b';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='p';
 						break;
 						
 					case 6:
-						cp->parameters[counter][com_len+6]='s';
-						cp->parameters[counter][com_len+7]='i';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='s';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='i';
 						break;
 						
 					case 7:
-						cp->parameters[counter][com_len+6]='d';
-						cp->parameters[counter][com_len+7]='i';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+6]='d';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+7]='i';
 						break;
 					}
 					
-					cp->parameters[counter][com_len+8]='*';
-					ext_len=0;
-					buf=1;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+8]='*';
+					nExtensionLength=0;
+					nBufferByte=1;
 					
-					while(ext_len<cp->sib.scale){
-						buf*=2;
-						ext_len++;
+					while (nExtensionLength < o_pCommand->m_objSib.m_nScale){
+						nBufferByte*=2;
+						nExtensionLength++;
 					}	
-					cp->parameters[counter][com_len+9]=buf+'0';
-					buf=10;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+9]=nBufferByte+'0';
+					nBufferByte=10;
 					break;
 					
 				case 5://can be displacement only
-					if(cp->modrm.mod==0){
-						ext_len=4;
-						while(ext_len!=0){
-							cp->parameters[counter][com_len+ext_len*2]=mp[bytecounter]%16+'0';
+					if (o_pCommand->m_objModrm.m_nMod==0){
+						nExtensionLength=4;
+						while (nExtensionLength != 0){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]=pBytes[idxByte]%16+'0';
 							//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
 							//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-							if((cp->parameters[counter][com_len+ext_len*2]-'0')>9){				
-								cp->parameters[counter][com_len+ext_len*2]='A'+cp->parameters[counter][com_len+ext_len*2]-'0'-10;
+							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0')>9){
+								o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0'-10;
 							}
-							cp->parameters[counter][com_len+ext_len*2-1]=mp[bytecounter]/16+'0';
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]=pBytes[idxByte]/16+'0';
 							//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-							if((cp->parameters[counter][com_len+ext_len*2-1]-'0')>9){
-								cp->parameters[counter][com_len+ext_len*2-1]='A'+cp->parameters[counter][com_len+ext_len*2-1]-'0'-10;
+							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0')>9){
+								o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0'-10;
 							}
-							bytecounter++;
-							ext_len--;
+							idxByte++;
+							nExtensionLength--;
 						}
-						buf=9;
+						nBufferByte=9;
 					}else{
-						cp->parameters[counter][com_len+2]='b';
-						cp->parameters[counter][com_len+3]='p';
-						buf=4;
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='b';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='p';
+						nBufferByte=4;
 					}
 					break;
 					
 				case 6://esi
 					//cp->parameters[counter][1]='e';
-					cp->parameters[counter][com_len+2]='s';
-					cp->parameters[counter][com_len+3]='i';
-					buf=4;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='s';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='i';
+					nBufferByte=4;
 					break;
 					
 				case 7://edi
 					//cp->parameters[counter][1]='e';
-					cp->parameters[counter][com_len+2]='d';
-					cp->parameters[counter][com_len+3]='i';
-					buf=4;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='d';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='i';
+					nBufferByte=4;
 					break;	
 				}
-				ext_len=cp->modrm.mod*cp->modrm.mod;//in ext_len number of displacement bytes
-				if(ext_len!=0){
-					if((ext_len==1) && (mp[bytecounter]>0x7f)){//1 byte sign extended
-						cp->parameters[counter][com_len+buf]='-';
-						cp->parameters[counter][com_len+buf+1]=(0x100-mp[bytecounter])/16+'0';
-						if((cp->parameters[counter][com_len+buf+1]-'0')>9){				
-							cp->parameters[counter][com_len+buf+1]='A'+cp->parameters[counter][com_len+buf+1]-'0'-10;
+				nExtensionLength=o_pCommand->m_objModrm.m_nMod*o_pCommand->m_objModrm.m_nMod;//in ext_len number of displacement bytes
+				if (nExtensionLength!=0){
+					if ((nExtensionLength==1) && (pBytes[idxByte]>0x7f)){//1 byte sign extended
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='-';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]=(0x100-pBytes[idxByte])/16+'0';
+						if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]-'0')>9){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]-'0'-10;
 						}
-						cp->parameters[counter][com_len+buf+2]=(0x100-mp[bytecounter])%16+'0';
-						if((cp->parameters[counter][com_len+buf+2]-'0')>9){				
-							cp->parameters[counter][com_len+buf+2]='A'+cp->parameters[counter][com_len+buf+2]-'0'-10;
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]=(0x100-pBytes[idxByte])%16+'0';
+						if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]-'0')>9){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]-'0'-10;
 						}
 					}else{
-						cp->parameters[counter][com_len+buf]='+';
-						while(ext_len!=0){
-							cp->parameters[counter][com_len+buf+ext_len*2]=mp[bytecounter]%16+'0';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='+';
+						while (nExtensionLength!=0){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]=pBytes[idxByte]%16+'0';
 							//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
 							//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-							if((cp->parameters[counter][com_len+buf+ext_len*2]-'0')>9){				
-								cp->parameters[counter][com_len+buf+ext_len*2]='A'+cp->parameters[counter][com_len+buf+ext_len*2]-'0'-10;
+							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]-'0')>9){
+								o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]-'0'-10;
 							}
-							cp->parameters[counter][com_len+buf+ext_len*2-1]=mp[bytecounter]/16+'0';
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]=pBytes[idxByte]/16+'0';
 							//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-							if((cp->parameters[counter][com_len+buf+ext_len*2-1]-'0')>9){
-								cp->parameters[counter][com_len+buf+ext_len*2-1]='A'+cp->parameters[counter][com_len+buf+ext_len*2-1]-'0'-10;
+							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]-'0')>9){
+								o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]-'0'-10;
 							}
-							bytecounter++;
-							ext_len--;
+							idxByte++;
+							nExtensionLength--;
 						}
 					}
-					buf=buf+cp->modrm.mod*cp->modrm.mod*2+1;
+					nBufferByte=nBufferByte+o_pCommand->m_objModrm.m_nMod*o_pCommand->m_objModrm.m_nMod*2+1;
 				}
-				cp->parameters[counter][com_len+buf]=']';
-				cp->parameters[counter][com_len+buf+1]=0;				
+				o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]=']';
+				o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]=0;
 			}else{//0x67 present
-				switch(cp->modrm.rm){
+				switch (o_pCommand->m_objModrm.m_nRm){
 				case 0:
-					cp->parameters[counter][com_len+1]='b';
-					cp->parameters[counter][com_len+2]='x';
-					cp->parameters[counter][com_len+3]='+';
-					cp->parameters[counter][com_len+4]='s';
-					cp->parameters[counter][com_len+5]='i';
-					buf=6;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='x';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='+';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='s';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+5]='i';
+					nBufferByte=6;
 					break;
 					
 				case 1:
-					cp->parameters[counter][com_len+1]='b';
-					cp->parameters[counter][com_len+2]='x';
-					cp->parameters[counter][com_len+3]='+';
-					cp->parameters[counter][com_len+4]='d';
-					cp->parameters[counter][com_len+5]='i';
-					buf=6;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='x';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='+';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='d';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+5]='i';
+					nBufferByte=6;
 					break;
 					
 				case 2:
-					cp->parameters[counter][com_len+1]='b';
-					cp->parameters[counter][com_len+2]='p';
-					cp->parameters[counter][com_len+3]='+';
-					cp->parameters[counter][com_len+4]='s';
-					cp->parameters[counter][com_len+5]='i';
-					buf=6;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='p';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='+';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='s';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+5]='i';
+					nBufferByte=6;
 					break;
 					
 				case 3:
-					cp->parameters[counter][com_len+1]='b';
-					cp->parameters[counter][com_len+2]='p';
-					cp->parameters[counter][com_len+3]='+';
-					cp->parameters[counter][com_len+4]='d';
-					cp->parameters[counter][com_len+5]='i';
-					buf=6;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='p';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+3]='+';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+4]='d';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+5]='i';
+					nBufferByte=6;
 					break;
 					
 				case 4:
-					cp->parameters[counter][com_len+1]='s';
-					cp->parameters[counter][com_len+2]='i';
-					buf=3;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='s';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='i';
+					nBufferByte=3;
 					break;
 					
 				case 5:
-					cp->parameters[counter][com_len+1]='d';
-					cp->parameters[counter][com_len+2]='i';
-					buf=3;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='d';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='i';
+					nBufferByte=3;
 					break;
 					
 				case 6://can be disp16 only
-					if(cp->modrm.mod==0){
-						ext_len=2;
-						while(ext_len!=0){
-							cp->parameters[counter][com_len+ext_len*2]=mp[bytecounter]%16+'0';
+					if (0 == o_pCommand->m_objModrm.m_nMod ){
+						nExtensionLength=2;
+						while (nExtensionLength != 0){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]=pBytes[idxByte]%16+'0';
 							//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
 							//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-							if((cp->parameters[counter][com_len+ext_len*2]-'0')>9){				
-								cp->parameters[counter][com_len+ext_len*2]='A'+cp->parameters[counter][com_len+ext_len*2]-'0'-10;
+							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0') > 9){
+								o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0'-10;
 							}
-							cp->parameters[counter][com_len+ext_len*2-1]=mp[bytecounter]/16+'0';
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]=pBytes[idxByte]/16+'0';
 							//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-							if((cp->parameters[counter][com_len+ext_len*2-1]-'0')>9){
-								cp->parameters[counter][com_len+ext_len*2-1]='A'+cp->parameters[counter][com_len+ext_len*2-1]-'0'-10;
+							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0') > 9){
+								o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0'-10;
 							}
-							bytecounter++;
-							ext_len--;
+							idxByte++;
+							nExtensionLength--;
 						}
-						buf=5;
+						nBufferByte=5;
 					}else{
-						cp->parameters[counter][com_len+1]='b';
-						cp->parameters[counter][com_len+2]='p';
-						buf=3;
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='p';
+						nBufferByte=3;
 					}
 					break;
 					
 				case 7:
-					cp->parameters[counter][com_len+1]='b';
-					cp->parameters[counter][com_len+2]='x';
-					buf=3;
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+1]='b';
+					o_pCommand->m_pParameters[idxOperand][nCommandLength+2]='x';
+					nBufferByte=3;
 					break;
 				}
 				
-				ext_len=cp->modrm.mod;//in ext_len number of displacement bytes
-				if(ext_len!=0){
+				nExtensionLength=o_pCommand->m_objModrm.m_nMod;//in ext_len number of displacement bytes
+				if (nExtensionLength!=0){
 					
-					if((ext_len==1) && (mp[bytecounter]>0x7f)){//1 byte sign extended
-						cp->parameters[counter][com_len+buf]='-';
-						cp->parameters[counter][com_len+buf+1]=(0x100-mp[bytecounter])/16+'0';
-						if((cp->parameters[counter][com_len+buf+1]-'0')>9){				
-							cp->parameters[counter][com_len+buf+1]='A'+cp->parameters[counter][com_len+buf+1]-'0'-10;
+					if ((nExtensionLength==1) && (pBytes[idxByte]>0x7f)){//1 byte sign extended
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='-';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]=(0x100-pBytes[idxByte])/16+'0';
+						if ( (o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]-'0') > 9 ){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]-'0'-10;
 						}
-						cp->parameters[counter][com_len+buf+2]=(0x100-mp[bytecounter])%16+'0';
-						if((cp->parameters[counter][com_len+buf+2]-'0')>9){				
-							cp->parameters[counter][com_len+buf+2]='A'+cp->parameters[counter][com_len+buf+2]-'0'-10;
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]=(0x100-pBytes[idxByte])%16+'0';
+						if ( (o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]-'0') > 9 ){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]-'0'-10;
 						}
 					}else{
 						
-						cp->parameters[counter][com_len+buf]='+';
-						while(ext_len!=0){
-							cp->parameters[counter][com_len+buf+ext_len*2]=mp[bytecounter]%16+'0';
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='+';
+						while (nExtensionLength != 0){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]=pBytes[idxByte]%16+'0';
 							//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
 							//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-							if((cp->parameters[counter][com_len+buf+ext_len*2]-'0')>9){				
-								cp->parameters[counter][com_len+buf+ext_len*2]='A'+cp->parameters[counter][com_len+buf+ext_len*2]-'0'-10;
+							if ( (o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]-'0') > 9){
+								o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]-'0'-10;
 							}
-							cp->parameters[counter][com_len+buf+ext_len*2-1]=mp[bytecounter]/16+'0';
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]=pBytes[idxByte]/16+'0';
 							//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-							if((cp->parameters[counter][com_len+buf+ext_len*2-1]-'0')>9){
-								cp->parameters[counter][com_len+buf+ext_len*2-1]='A'+cp->parameters[counter][com_len+buf+ext_len*2-1]-'0'-10;
+							if ( (o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]-'0') > 9){
+								o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]-'0'-10;
 							}
-							bytecounter++;
-							ext_len--;
+							++idxByte;
+							--nExtensionLength;
 						}
 					}
-					buf=buf+cp->modrm.mod*2+1;
+					nBufferByte=nBufferByte+o_pCommand->m_objModrm.m_nMod*2+1;
 				}
-				cp->parameters[counter][com_len+buf]=']';
-				cp->parameters[counter][com_len+buf+1]=0;
+				o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]=']';
+				o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]=0;
 			}
 
 			break;
 			
 			//-----------------------------------------------immediate--------------------------------------------------	
 		case 'i'://immediate //0x66/,s,w (,d) affects
-			ext_len=1;
-			if(cp->sf.s==1){//1byte imm
-				if(mp[bytecounter]>0x7F){//-
-					cp->parameters[counter][0]='-';
-					cp->parameters[counter][1]=(0x100-mp[bytecounter])/16+'0';
-					cp->parameters[counter][2]=(0x100-mp[bytecounter])%16+'0';
-					if((cp->parameters[counter][1]-'0')>9){
-						cp->parameters[counter][1]='A'+cp->parameters[counter][1]-'0'-10;
+			nExtensionLength=1;
+			if (1 == o_pCommand->m_objSpecialFields.m_nS){//1byte imm
+				if (pBytes[idxByte] > 0x7F){//-
+					o_pCommand->m_pParameters[idxOperand][0]='-';
+					o_pCommand->m_pParameters[idxOperand][1]=(0x100-pBytes[idxByte])/16+'0';
+					o_pCommand->m_pParameters[idxOperand][2]=(0x100-pBytes[idxByte])%16+'0';
+					if ( (o_pCommand->m_pParameters[idxOperand][1]-'0') > 9 ){
+						o_pCommand->m_pParameters[idxOperand][1]='A'+o_pCommand->m_pParameters[idxOperand][1]-'0'-10;
 					}
-					if((cp->parameters[counter][2]-'0')>9){
-						cp->parameters[counter][2]='A'+cp->parameters[counter][2]-'0'-10;
+					if ( (o_pCommand->m_pParameters[idxOperand][2]-'0') > 9 ){
+						o_pCommand->m_pParameters[idxOperand][2]='A'+o_pCommand->m_pParameters[idxOperand][2]-'0'-10;
 					}
-					cp->parameters[counter][3]=0;
-					bytecounter++;
+					o_pCommand->m_pParameters[idxOperand][3]=0;
+					idxByte++;
 					break;
 				}
 			}else{
-				if(cp->sf.w==1){//2,4 byte imm
-					if(cp->prefix.opr==0x66){//2 bytes imm
-						ext_len =2;
+				if (o_pCommand->m_objSpecialFields.m_nW == 1){//2,4 byte imm
+					if (o_pCommand->m_objPrefix.m_nOpr == 0x66){//2 bytes imm
+						nExtensionLength =2;
 					}else{//4 bytes imm
-						ext_len=4;
+						nExtensionLength=4;
 					}
 				}
 			}
 
-			cp->parameters[counter][ext_len*2]=0;
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength*2]=0;
 
-			while(ext_len!=0){
-				cp->parameters[counter][ext_len*2-1]=mp[bytecounter]%16+'0';
+			while (nExtensionLength!=0){
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-1]=pBytes[idxByte]%16+'0';
 				//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
 				//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-				if((cp->parameters[counter][ext_len*2-1]-'0')>9){				
-					cp->parameters[counter][ext_len*2-1]='A'+cp->parameters[counter][ext_len*2-1]-'0'-10;
+				if ( (o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-1]-'0') > 9){
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-1]-'0'-10;
 				}
-				cp->parameters[counter][ext_len*2-2]=mp[bytecounter]/16+'0';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-2]=pBytes[idxByte]/16+'0';
 				//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-				if((cp->parameters[counter][ext_len*2-2]-'0')>9){
-					cp->parameters[counter][ext_len*2-2]='A'+cp->parameters[counter][ext_len*2-2]-'0'-10;
+				if ( (o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-2]-'0') > 9 ){
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-2]='A'+o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-2]-'0'-10;
 				}
-				bytecounter++;
-				ext_len--;
+				++idxByte;
+				--nExtensionLength;
 			}
 
 			break;
 			
 			//8bit immediate----------------------------------------------------------------------------------------------------
 		case '8':
-			cp->parameters[counter][0]=mp[bytecounter]/16+'0';
-			if((cp->parameters[counter][0]-'0')>9){
-				cp->parameters[counter][0]='A'+cp->parameters[counter][0]-'0'-10;
+			o_pCommand->m_pParameters[idxOperand][0]=pBytes[idxByte]/16+'0';
+			if ( (o_pCommand->m_pParameters[idxOperand][0]-'0') > 9 ){
+				o_pCommand->m_pParameters[idxOperand][0]='A'+o_pCommand->m_pParameters[idxOperand][0]-'0'-10;
 			}
-			cp->parameters[counter][1]=mp[bytecounter]%16+'0';
-			if((cp->parameters[counter][1]-'0')>9){
-				cp->parameters[counter][1]='A'+cp->parameters[counter][1]-'0'-10;
+			o_pCommand->m_pParameters[idxOperand][1]=pBytes[idxByte]%16+'0';
+			if ( (o_pCommand->m_pParameters[idxOperand][1]-'0') > 9 ){
+				o_pCommand->m_pParameters[idxOperand][1]='A'+o_pCommand->m_pParameters[idxOperand][1]-'0'-10;
 			}
-			cp->parameters[counter][2]=0;
-			bytecounter++;
+			o_pCommand->m_pParameters[idxOperand][2]=0;
+			idxByte++;
 			break;
 			
 			//16bit immediate----------------------------------------------------------------------------------------------------
 		case '6':
-			buf=2;
-			while(buf!=0){//0,1
-				buf--;
-				cp->parameters[counter][buf*2]=mp[bytecounter]/16+'0';
-				if((cp->parameters[counter][buf*2]-'0')>9){
-					cp->parameters[counter][buf*2]='A'+cp->parameters[counter][0]-'0'-10;
+			nBufferByte=2;
+			while (nBufferByte != 0){//0,1
+				nBufferByte--;
+				o_pCommand->m_pParameters[idxOperand][nBufferByte*2]=pBytes[idxByte]/16+'0';
+				if ( (o_pCommand->m_pParameters[idxOperand][nBufferByte*2]-'0') > 9){
+					o_pCommand->m_pParameters[idxOperand][nBufferByte*2]='A'+o_pCommand->m_pParameters[idxOperand][0]-'0'-10;
 				}
-				cp->parameters[counter][buf*2+1]=mp[bytecounter]%16+'0';
-				if((cp->parameters[counter][buf*2+1]-'0')>9){
-					cp->parameters[counter][buf*2+1]='A'+cp->parameters[counter][buf*2+1]-'0'-10;
+				o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]=pBytes[idxByte]%16+'0';
+				if ( (o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]-'0') > 9 ){
+					o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]-'0'-10;
 				}
-				bytecounter++;
+				idxByte++;
 			}
-			cp->parameters[counter][4]=0;
+			o_pCommand->m_pParameters[idxOperand][4]=0;
 			break;
 			
 			//dx(ex. variable port)----------------------------------------------------------------------------------------------------
 		case 'v':
-			cp->parameters[counter][0]='d';
-			cp->parameters[counter][1]='x';
-			cp->parameters[counter][2]=0;
+			o_pCommand->m_pParameters[idxOperand][0]='d';
+			o_pCommand->m_pParameters[idxOperand][1]='x';
+			o_pCommand->m_pParameters[idxOperand][2]=0;
 			break;
 			//tttn-----------------------------------------------------------------------------------------------------------------------------------
 		case 't'://tttn
-			cp->par_count--;//tttn is modification, not parameter
-			ext_len=0;
-			while(cp->com_text[ext_len]!=0){
-				ext_len++;
+			o_pCommand->m_nParameterCount--;//tttn is modification, not parameter
+			nExtensionLength=0;
+			while (0 != o_pCommand->m_strCommandText[nExtensionLength]){
+				nExtensionLength++;
 			}
-			cp->com_text=(char*)realloc( cp->com_text,ext_len+3);//????????? ??? ??????//command + 2 chars + 0 
+			o_pCommand->m_strCommandText=(char*)realloc( o_pCommand->m_strCommandText,nExtensionLength+3);//????????? ??? ??????//command + 2 chars + 0
 			//in ext_len position of zero in com_text
-			switch(cp->sf.tttn){
+			switch(o_pCommand->m_objSpecialFields.m_nTttn){
 			case 0://overflow
-				cp->com_text[ext_len]='o';
-				cp->com_text[ext_len+1]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='o';
+				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
 				break;
 				
 			case 1://no overflow
-				cp->com_text[ext_len]='n';
-				cp->com_text[ext_len+1]='o';
-				cp->com_text[ext_len+2]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='n';
+				o_pCommand->m_strCommandText[nExtensionLength+1]='o';
+				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
 				break;
 				
 			case 2://below
-				cp->com_text[ext_len]='b';
-				cp->com_text[ext_len+1]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='b';
+				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
 				break;
 
 			case 3://not below
-				cp->com_text[ext_len]='n';
-				cp->com_text[ext_len+1]='b';
-				cp->com_text[ext_len+2]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='n';
+				o_pCommand->m_strCommandText[nExtensionLength+1]='b';
+				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
 				break;
 
 			case 4://zero
-				cp->com_text[ext_len]='z';
-				cp->com_text[ext_len+1]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='z';
+				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
 				break;						
 				
 			case 5://not zero
-				cp->com_text[ext_len]='n';
-				cp->com_text[ext_len+1]='z';
-				cp->com_text[ext_len+2]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='n';
+				o_pCommand->m_strCommandText[nExtensionLength+1]='z';
+				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
 				break;
 				
 			case 6://not above
-				cp->com_text[ext_len]='n';
-				cp->com_text[ext_len+1]='a';
-				cp->com_text[ext_len+2]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='n';
+				o_pCommand->m_strCommandText[nExtensionLength+1]='a';
+				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
 				break;
 				
 			case 7://above
-				cp->com_text[ext_len]='a';
-				cp->com_text[ext_len+1]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='a';
+				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
 				break;
 				
 			case 8://sign
-				cp->com_text[ext_len]='s';
-				cp->com_text[ext_len+1]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='s';
+				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
 				break;
 				
 			case 9://no sign
-				cp->com_text[ext_len]='n';
-				cp->com_text[ext_len+1]='s';
-				cp->com_text[ext_len+2]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='n';
+				o_pCommand->m_strCommandText[nExtensionLength+1]='s';
+				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
 				break;
 				
 			case 10://parity
-				cp->com_text[ext_len]='p';
-				cp->com_text[ext_len+1]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='p';
+				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
 				break;
 
 			case 11://not parity
-				cp->com_text[ext_len]='n';
-				cp->com_text[ext_len+1]='p';
-				cp->com_text[ext_len+2]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='n';
+				o_pCommand->m_strCommandText[nExtensionLength+1]='p';
+				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
 				break;
 
 			case 12://less
-				cp->com_text[ext_len]='l';
-				cp->com_text[ext_len+1]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='l';
+				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
 				break;						
 				
 			case 13://not less
-				cp->com_text[ext_len]='n';
-				cp->com_text[ext_len+1]='l';
-				cp->com_text[ext_len+2]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='n';
+				o_pCommand->m_strCommandText[nExtensionLength+1]='l';
+				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
 				break;
 				
 			case 14://not greater
-				cp->com_text[ext_len]='n';
-				cp->com_text[ext_len+1]='g';
-				cp->com_text[ext_len+2]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='n';
+				o_pCommand->m_strCommandText[nExtensionLength+1]='g';
+				o_pCommand->m_strCommandText[nExtensionLength+2]=0;
 				break;
 				
 			case 15://greater
-				cp->com_text[ext_len]='g';
-				cp->com_text[ext_len+1]=0;
+				o_pCommand->m_strCommandText[nExtensionLength]='g';
+				o_pCommand->m_strCommandText[nExtensionLength+1]=0;
 				break;
 			}
 			break;
 			
 			//f: pushf -/w/d, pusha -/w/d, popf -/w/d, popa -/w/d: modification---------------------------------------------------------------------------------------
 		case 'f'://pushf -/w/d, pusha -/w/d, popf -/w/d, popa -/w/d: modification
-			cp->par_count--;//modification, not parameter
-			ext_len=0;
-			while(cp->com_text[ext_len]!=0){
-				ext_len++;
+			o_pCommand->m_nParameterCount--;//modification, not parameter
+			nExtensionLength=0;
+			while (o_pCommand->m_strCommandText[nExtensionLength]!=0){
+				nExtensionLength++;
 			}
-			cp->com_text=(char*)realloc( cp->com_text,ext_len+2);//????????? ??? ??????//command + 1 char + 0 
+			o_pCommand->m_strCommandText=(char*)realloc( o_pCommand->m_strCommandText,nExtensionLength+2);//????????? ??? ??????//command + 1 char + 0
 			//in ext_len position of zero in com_text
-			if(cp->prefix.opr==0x66){//0x66
-				cp->com_text[ext_len]='w';
+			if (o_pCommand->m_objPrefix.m_nOpr==0x66){//0x66
+				o_pCommand->m_strCommandText[nExtensionLength]='w';
 			}else{//no 0x66
-				cp->com_text[ext_len]='d';
+				o_pCommand->m_strCommandText[nExtensionLength]='d';
 			}
-			cp->com_text[ext_len+1]=0;
+			o_pCommand->m_strCommandText[nExtensionLength+1]=0;
 			break;
 			
 			//j:jcxz/jecxz: modification---------------------------------------------------------------------------------------
 		case 'j'://jcxz/jecxz: modification
-			cp->par_count--;//modification, not parameter
-			ext_len=1;
-			cp->com_text=(char*)realloc( cp->com_text,6);//????????? ??? ??????//'jecxz' + 0 
+			o_pCommand->m_nParameterCount--;//modification, not parameter
+			nExtensionLength=1;
+			o_pCommand->m_strCommandText=(char*)realloc( o_pCommand->m_strCommandText,6);//????????? ??? ??????//'jecxz' + 0
 
-			if(cp->prefix.sr!=0x67){//0x66
-				cp->com_text[1]='e';
-				ext_len++;
+			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//0x66
+				o_pCommand->m_strCommandText[1]='e';
+				nExtensionLength++;
 			}
-			cp->com_text[ext_len]='c';
-			cp->com_text[ext_len+1]='x';
-			cp->com_text[ext_len+2]='z';
-			cp->com_text[ext_len+3]=0;
+			o_pCommand->m_strCommandText[nExtensionLength]='c';
+			o_pCommand->m_strCommandText[nExtensionLength+1]='x';
+			o_pCommand->m_strCommandText[nExtensionLength+2]='z';
+			o_pCommand->m_strCommandText[nExtensionLength+3]=0;
 			break;
 			
 			//':'-DWORD PTR ds:[esi]-DWORD PTR es:[edi]------------------------------------------------------------------------------------
 		case ':'://DWORD PTR ds:[esi]-DWORD PTR es:[edi]
-			if(cp->sf.w==0){//1 byte operand 
-				cp->parameters[counter][0]='B';
-				cp->parameters[counter][1]='Y';
-				cp->parameters[counter][2]='T';
-				cp->parameters[counter][3]='E';
-				ext_len=4;
+			if (o_pCommand->m_objSpecialFields.m_nW==0){//1 byte operand
+				o_pCommand->m_pParameters[idxOperand][0]='B';
+				o_pCommand->m_pParameters[idxOperand][1]='Y';
+				o_pCommand->m_pParameters[idxOperand][2]='T';
+				o_pCommand->m_pParameters[idxOperand][3]='E';
+				nExtensionLength=4;
 			}else{//2|4 byte operand 
-				if(cp->prefix.opr==0x66){//0x66 -2byte
-					cp->parameters[counter][0]='W';
-					cp->parameters[counter][1]='O';
-					cp->parameters[counter][2]='R';
-					cp->parameters[counter][3]='D';
-					ext_len=4;
+				if (o_pCommand->m_objPrefix.m_nOpr==0x66){//0x66 -2byte
+					o_pCommand->m_pParameters[idxOperand][0]='W';
+					o_pCommand->m_pParameters[idxOperand][1]='O';
+					o_pCommand->m_pParameters[idxOperand][2]='R';
+					o_pCommand->m_pParameters[idxOperand][3]='D';
+					nExtensionLength=4;
 				}else{//no 0x66 -4byte
-					cp->parameters[counter][0]='D';
-					cp->parameters[counter][1]='W';
-					cp->parameters[counter][2]='O';
-					cp->parameters[counter][3]='R';
-					cp->parameters[counter][4]='D';
-					ext_len=5;
+					o_pCommand->m_pParameters[idxOperand][0]='D';
+					o_pCommand->m_pParameters[idxOperand][1]='W';
+					o_pCommand->m_pParameters[idxOperand][2]='O';
+					o_pCommand->m_pParameters[idxOperand][3]='R';
+					o_pCommand->m_pParameters[idxOperand][4]='D';
+					nExtensionLength=5;
 				}
 			}
 
-			cp->parameters[counter][ext_len]='_';
-			cp->parameters[counter][ext_len+1]='P';
-			cp->parameters[counter][ext_len+2]='T';
-			cp->parameters[counter][ext_len+3]='R';
-			cp->parameters[counter][ext_len+4]='_';
-			ext_len+=5;
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength]='_';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='P';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]='T';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]='R';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+4]='_';
+			nExtensionLength+=5;
 
-			if(counter==0){//1st par
+			if (0==idxOperand){//1st par
 				
-				switch(cp->prefix.segr){
+				switch (o_pCommand->m_objPrefix.m_nSegr){
 				case 0x2e: //cs
-					cp->parameters[counter][ext_len]='C';
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='C';
 					break;
 				case 0x36://ss
-					cp->parameters[counter][ext_len]='S';
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='S';
 					
 					break;
 				case 0x26: //es
-					cp->parameters[counter][ext_len]='E';
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
 					
 					break;
 				case 0x64: //fs
-					cp->parameters[counter][ext_len]='C';
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='C';
 					
 					break;
 				case 0x65: //gs
-					cp->parameters[counter][ext_len]='G';
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='G';
 					break;
 				default:
-					cp->parameters[counter][ext_len]='D';
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='D';
 					break;
 				}
 			}else{
-				cp->parameters[counter][ext_len]='E';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
 			}
-			cp->parameters[counter][ext_len+1]='S';
-			cp->parameters[counter][ext_len+2]=':';
-			cp->parameters[counter][ext_len+3]='[';
-			ext_len+=4;
-			if(cp->prefix.sr!=0x67){//no 0x67-4byte addr
-				cp->parameters[counter][ext_len]='E';
-				ext_len++;
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='S';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]=':';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]='[';
+			nExtensionLength+=4;
+			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//no 0x67-4byte addr
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
+				nExtensionLength++;
 			}
-			if(counter==0){//1st par
-				cp->parameters[counter][ext_len]='S';
+			if (idxOperand==0){//1st par
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='S';
 			}else{
-				cp->parameters[counter][ext_len]='D';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='D';
 			}
-			cp->parameters[counter][ext_len+1]='I';
-			cp->parameters[counter][ext_len+2]=']';
-			cp->parameters[counter][ext_len+3]=0;
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='I';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]=']';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]=0;
 
 			break;
 			
 			//'g'-JMP FAR, CALL FAR------------------------------------------------------------------------------------
 		case 'g'://JMP FAR, CALL FAR
-			buf=255;
-			ext_len=0;
-			cp->parameters[counter][0]='F';
-			cp->parameters[counter][1]='A';
-			cp->parameters[counter][2]='R';
-			cp->parameters[counter][3]='_';
-			cp->parameters[counter]+=4;
-			if(cp->prefix.opr==0x66){//0x67 present-4433:2211
-				buf2=4;
+			nBufferByte=255;
+			nExtensionLength=0;
+			o_pCommand->m_pParameters[idxOperand][0]='F';
+			o_pCommand->m_pParameters[idxOperand][1]='A';
+			o_pCommand->m_pParameters[idxOperand][2]='R';
+			o_pCommand->m_pParameters[idxOperand][3]='_';
+			o_pCommand->m_pParameters[idxOperand]+=4;
+			if (o_pCommand->m_objPrefix.m_nOpr==0x66){//0x67 present-4433:2211
+				nBufferByte2=4;
 			}else{//6655:44332211
-				buf2=6;
+				nBufferByte2=6;
 			}
-			while(ext_len!=(int)buf2){
-				cp->parameters[counter][buf-255+(buf2-ext_len)*2-1]=mp[bytecounter]/16+'0';
-				cp->parameters[counter][buf-255+(buf2-ext_len)*2]=mp[bytecounter]%16+'0';
-				if((cp->parameters[counter][buf-255+(buf2-ext_len)*2-1]-'0')>9){				
-					cp->parameters[counter][buf-255+(buf2-ext_len)*2-1]='A'+cp->parameters[counter][buf-255+(buf2-ext_len)*2-1]-'0'-10;
+			while (nExtensionLength!=(int)nBufferByte2){
+				o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2-1]=pBytes[idxByte]/16+'0';
+				o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]=pBytes[idxByte]%16+'0';
+				if ((o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2-1]-'0')>9){
+					o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2-1]-'0'-10;
 				}
-				if((cp->parameters[counter][buf-255+(buf2-ext_len)*2]-'0')>9){
-					cp->parameters[counter][buf-255+(buf2-ext_len)*2]='A'+cp->parameters[counter][buf-255+(buf2-ext_len)*2]-'0'-10;
+				if ((o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]-'0')>9){
+					o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]-'0'-10;
 				}
-				bytecounter++;
-				ext_len++;
-				if((buf2-ext_len)==2){
-					cp->parameters[counter][4]=':';
-					buf=254;
+				idxByte++;
+				nExtensionLength++;
+				if ((nBufferByte2-nExtensionLength)==2){
+					o_pCommand->m_pParameters[idxOperand][4]=':';
+					nBufferByte=254;
 				}
 			}
-			cp->parameters[counter][buf2*2+1]=0;
-			cp->parameters[counter]-=4;
+			o_pCommand->m_pParameters[idxOperand][nBufferByte2*2+1]=0;
+			o_pCommand->m_pParameters[idxOperand]-=4;
 			break;
 			
 			//'x'-xlat: byte ptr ds[ebx/bx+al]------------------------------------------------------------------------------------
 		case 'x'://xlat
-			ext_len=0;
-			cp->parameters[counter][0]='B';
-			cp->parameters[counter][1]='Y';
-			cp->parameters[counter][2]='T';
-			cp->parameters[counter][3]='E';
-			cp->parameters[counter][4]='_';
-			cp->parameters[counter][5]='P';
-			cp->parameters[counter][6]='T';
-			cp->parameters[counter][7]='R';
-			cp->parameters[counter][8]='_';
+			nExtensionLength=0;
+			o_pCommand->m_pParameters[idxOperand][0]='B';
+			o_pCommand->m_pParameters[idxOperand][1]='Y';
+			o_pCommand->m_pParameters[idxOperand][2]='T';
+			o_pCommand->m_pParameters[idxOperand][3]='E';
+			o_pCommand->m_pParameters[idxOperand][4]='_';
+			o_pCommand->m_pParameters[idxOperand][5]='P';
+			o_pCommand->m_pParameters[idxOperand][6]='T';
+			o_pCommand->m_pParameters[idxOperand][7]='R';
+			o_pCommand->m_pParameters[idxOperand][8]='_';
 
-			cp->parameters[counter][9]='D';
+			o_pCommand->m_pParameters[idxOperand][9]='D';
 
-			switch(cp->prefix.segr){
+			switch(o_pCommand->m_objPrefix.m_nSegr){
 			case 0x2e:
-				cp->parameters[counter][9]='C';
+				o_pCommand->m_pParameters[idxOperand][9]='C';
 				break;
 			case 0x36:
-				cp->parameters[counter][9]='S';
+				o_pCommand->m_pParameters[idxOperand][9]='S';
 				break;
 			case 0x26:
-				cp->parameters[counter][9]='E';
+				o_pCommand->m_pParameters[idxOperand][9]='E';
 				break;
 			case 0x64:
-				cp->parameters[counter][9]='F';
+				o_pCommand->m_pParameters[idxOperand][9]='F';
 				break;
 			case 0x65:
-				cp->parameters[counter][9]='G';
+				o_pCommand->m_pParameters[idxOperand][9]='G';
 				break;
 			}
 
-			cp->parameters[counter][10]='S';
-			cp->parameters[counter][11]=':';
-			cp->parameters[counter][12]='[';
+			o_pCommand->m_pParameters[idxOperand][10]='S';
+			o_pCommand->m_pParameters[idxOperand][11]=':';
+			o_pCommand->m_pParameters[idxOperand][12]='[';
 
-			if(cp->prefix.sr!=0x67){//ebx
-				cp->parameters[counter][13]='E';
-				ext_len=1;
+			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//ebx
+				o_pCommand->m_pParameters[idxOperand][13]='E';
+				nExtensionLength=1;
 			}
 
-			cp->parameters[counter][13+ext_len]='B';
-			cp->parameters[counter][14+ext_len]='X';
-			cp->parameters[counter][15+ext_len]='+';
-			cp->parameters[counter][16+ext_len]='A';
-			cp->parameters[counter][17+ext_len]='L';
-			cp->parameters[counter][18+ext_len]=']';
-			cp->parameters[counter][19+ext_len]=0;
+			o_pCommand->m_pParameters[idxOperand][13+nExtensionLength]='B';
+			o_pCommand->m_pParameters[idxOperand][14+nExtensionLength]='X';
+			o_pCommand->m_pParameters[idxOperand][15+nExtensionLength]='+';
+			o_pCommand->m_pParameters[idxOperand][16+nExtensionLength]='A';
+			o_pCommand->m_pParameters[idxOperand][17+nExtensionLength]='L';
+			o_pCommand->m_pParameters[idxOperand][18+nExtensionLength]=']';
+			o_pCommand->m_pParameters[idxOperand][19+nExtensionLength]=0;
 			break;
 			
 			//'q':rep/repnz влияют на описание команды: modification-------------------------------------------------------------------------------------
 		case 'q'://q
-			cp->par_count--;
-			ext_len=strlen(cp->com_text);
-			if(cp->prefix.lnr==0xf2){//repnz
-				temp_char1=(char*)malloc(ext_len+7);//'repne ',0
-				temp_char1[0]='r';
-				temp_char1[1]='e';
-				temp_char1[2]='p';
-				temp_char1[3]='n';
-				temp_char1[4]='z';
-				temp_char1[5]='_';
-				temp_char1[ext_len+7]=0;
-				ext_len=6;
+			o_pCommand->m_nParameterCount--;
+			nExtensionLength=strlen(o_pCommand->m_strCommandText);
+			if (o_pCommand->m_objPrefix.m_nLnr==0xf2){//repnz
+				strTempText=(char*)malloc(nExtensionLength+7);//'repne ',0
+				strTempText[0]='r'; //TODO strcpy
+				strTempText[1]='e';
+				strTempText[2]='p';
+				strTempText[3]='n';
+				strTempText[4]='z';
+				strTempText[5]='_';
+				strTempText[nExtensionLength+7]=0;
+				nExtensionLength=6;
 				
 			}
-			if(cp->prefix.lnr==0xf3){//rep
-				temp_char1=(char*)malloc(ext_len+5);//'rep ',0
-				temp_char1[0]='r';
-				temp_char1[1]='e';
-				temp_char1[2]='p';
-				temp_char1[3]='_';
-				temp_char1[ext_len+5]=0;
-				ext_len=4;
+			if (o_pCommand->m_objPrefix.m_nLnr==0xf3){//rep
+				strTempText=(char*)malloc(nExtensionLength+5);//'rep ',0
+				strTempText[0]='r';//TODO strcpy
+				strTempText[1]='e';
+				strTempText[2]='p';
+				strTempText[3]='_';
+				strTempText[nExtensionLength+5]=0;
+				nExtensionLength=4;
 			}
 
-			if(cp->prefix.lnr==0xff){//no rep/repne
+			if (o_pCommand->m_objPrefix.m_nLnr==0xff){//no rep/repne
 				break;
 			}
 
-			strcpy(temp_char1+ext_len,cp->com_text);//now command description modified
-			free(cp->com_text);
-			cp->com_text=temp_char1;
+			strcpy(strTempText+nExtensionLength,o_pCommand->m_strCommandText);//now command description modified
+			free(o_pCommand->m_strCommandText);
+			o_pCommand->m_strCommandText=strTempText;
 			break;
 			
 			//'u'-es:[edi](ins/ous)------------------------------------------------------------------------------------
 		case 'u':
-			if(cp->sf.w==0){//1 byte operand 
-				cp->parameters[counter][0]='B';
-				cp->parameters[counter][1]='Y';
-				cp->parameters[counter][2]='T';
-				cp->parameters[counter][3]='E';
-				ext_len=4;
+			if (o_pCommand->m_objSpecialFields.m_nW==0){//1 byte operand
+				o_pCommand->m_pParameters[idxOperand][0]='B';//TODO strcpy
+				o_pCommand->m_pParameters[idxOperand][1]='Y';
+				o_pCommand->m_pParameters[idxOperand][2]='T';
+				o_pCommand->m_pParameters[idxOperand][3]='E';
+				nExtensionLength=4;
 			}else{//2|4 byte operand 
-				if(cp->prefix.opr==0x66){//0x66 -2byte
-					cp->parameters[counter][0]='W';
-					cp->parameters[counter][1]='O';
-					cp->parameters[counter][2]='R';
-					cp->parameters[counter][3]='D';
-					ext_len=4;
+				if (o_pCommand->m_objPrefix.m_nOpr==0x66){//0x66 -2byte
+					o_pCommand->m_pParameters[idxOperand][0]='W';//TODO strcpy
+					o_pCommand->m_pParameters[idxOperand][1]='O';
+					o_pCommand->m_pParameters[idxOperand][2]='R';
+					o_pCommand->m_pParameters[idxOperand][3]='D';
+					nExtensionLength=4;
 				}else{//no 0x66 -4byte
-					cp->parameters[counter][0]='D';
-					cp->parameters[counter][1]='W';
-					cp->parameters[counter][2]='O';
-					cp->parameters[counter][3]='R';
-					cp->parameters[counter][4]='D';
-					ext_len=5;
+					o_pCommand->m_pParameters[idxOperand][0]='D';//TODO strcpy
+					o_pCommand->m_pParameters[idxOperand][1]='W';
+					o_pCommand->m_pParameters[idxOperand][2]='O';
+					o_pCommand->m_pParameters[idxOperand][3]='R';
+					o_pCommand->m_pParameters[idxOperand][4]='D';
+					nExtensionLength=5;
 				}
 			}
 
-			cp->parameters[counter][ext_len]='_';
-			cp->parameters[counter][ext_len+1]='P';
-			cp->parameters[counter][ext_len+2]='T';
-			cp->parameters[counter][ext_len+3]='R';
-			cp->parameters[counter][ext_len+4]='_';
-			cp->parameters[counter][ext_len+5]='E';
-			cp->parameters[counter][ext_len+6]='S';
-			cp->parameters[counter][ext_len+7]=':';
-			cp->parameters[counter][ext_len+8]='[';
-			ext_len+=9;
-			if(cp->prefix.sr!=0x67){//edi
-				cp->parameters[counter][ext_len]='E';
-				ext_len++;
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength]='_';//TODO strcpy
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='P';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]='T';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]='R';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+4]='_';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+5]='E';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+6]='S';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+7]=':';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+8]='[';
+			nExtensionLength+=9;
+			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//edi
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
+				nExtensionLength++;
 			}
 			
-			cp->parameters[counter][ext_len]='D';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength]='D';
 			
-			cp->parameters[counter][ext_len+1]='I';
-			cp->parameters[counter][ext_len+2]=']';
-			cp->parameters[counter][ext_len+3]=0;
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='I';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]=']';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]=0;
 
 			break;
 			
 			//-----------------------------------------------imm as memory (mov eax,full displacement)--------------------------------------------------	
 		case 'h'://imm as memory (mov eax,full displacement)//0x66/0x67/segment redefinition/w/d affects
 
-			if(cp->sf.w==0){//1 byte operand 
-				cp->parameters[counter][0]='B';
-				cp->parameters[counter][1]='Y';
-				cp->parameters[counter][2]='T';
-				cp->parameters[counter][3]='E';
-				ext_len=4;
+			if (o_pCommand->m_objSpecialFields.m_nW==0){//1 byte operand
+				o_pCommand->m_pParameters[idxOperand][0]='B';//TODO strcpy
+				o_pCommand->m_pParameters[idxOperand][1]='Y';
+				o_pCommand->m_pParameters[idxOperand][2]='T';
+				o_pCommand->m_pParameters[idxOperand][3]='E';
+				nExtensionLength=4;
 			}else{//2|4 byte operand 
-				if(cp->prefix.opr==0x66){//0x66 -2byte
-					cp->parameters[counter][0]='W';
-					cp->parameters[counter][1]='O';
-					cp->parameters[counter][2]='R';
-					cp->parameters[counter][3]='D';
-					ext_len=4;
+				if (o_pCommand->m_objPrefix.m_nOpr==0x66){//0x66 -2byte
+					o_pCommand->m_pParameters[idxOperand][0]='W';//TODO strcpy
+					o_pCommand->m_pParameters[idxOperand][1]='O';
+					o_pCommand->m_pParameters[idxOperand][2]='R';
+					o_pCommand->m_pParameters[idxOperand][3]='D';
+					nExtensionLength=4;
 				}else{//no 0x66 -4byte
-					cp->parameters[counter][0]='D';
-					cp->parameters[counter][1]='W';
-					cp->parameters[counter][2]='O';
-					cp->parameters[counter][3]='R';
-					cp->parameters[counter][4]='D';
-					ext_len=5;
+					o_pCommand->m_pParameters[idxOperand][0]='D';//TODO strcpy
+					o_pCommand->m_pParameters[idxOperand][1]='W';
+					o_pCommand->m_pParameters[idxOperand][2]='O';
+					o_pCommand->m_pParameters[idxOperand][3]='R';
+					o_pCommand->m_pParameters[idxOperand][4]='D';
+					nExtensionLength=5;
 				}
 			}
 
-			cp->parameters[counter][ext_len]='_';
-			cp->parameters[counter][ext_len+1]='P';
-			cp->parameters[counter][ext_len+2]='T';
-			cp->parameters[counter][ext_len+3]='R';
-			cp->parameters[counter][ext_len+4]='_';
-			ext_len+=5;
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength]='_';//TODO strcpy
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='P';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]='T';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]='R';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+4]='_';
+			nExtensionLength+=5;
 
-			switch(cp->prefix.segr){
+			switch(o_pCommand->m_objPrefix.m_nSegr){
 			case 0x2e: //cs
-				cp->parameters[counter][ext_len]='C';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='C';
 				break;
 			case 0x36://ss
-				cp->parameters[counter][ext_len]='S';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='S';
 				break;
 			case 0x26: //es
-				cp->parameters[counter][ext_len]='E';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
 				break;
 			case 0x64: //fs
-				cp->parameters[counter][ext_len]='C';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='C';
 				break;
 			case 0x65: //gs
-				cp->parameters[counter][ext_len]='G';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='G';
 				break;
 			default:
-				cp->parameters[counter][ext_len]='D';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='D';
 				break;
 			}
 
-			cp->parameters[counter][ext_len+1]='S';
-			cp->parameters[counter][ext_len+2]=':';
-			cp->parameters[counter][ext_len+3]='[';
-			ext_len+=4;
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+1]='S';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+2]=':';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+3]='[';
+			nExtensionLength+=4;
 
-			if(cp->prefix.sr==0x67){//2 bytes imm
-				buf =2;
+			if (o_pCommand->m_objPrefix.m_nSr==0x67){//2 bytes imm
+				nBufferByte =2;
 			}else{//4 bytes imm
-				buf=4;
+				nBufferByte=4;
 			}
 
-			cp->parameters[counter][ext_len+buf*2+1]=0;
-			cp->parameters[counter][ext_len+buf*2]=']';
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2+1]=0;
+			o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2]=']';
 
-			while(buf!=0){
-				cp->parameters[counter][ext_len+buf*2-1]=mp[bytecounter]%16+'0';
+			while (nBufferByte!=0){
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-1]=pBytes[idxByte]%16+'0';
 				//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
 				//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-				if((cp->parameters[counter][ext_len+buf*2-1]-'0')>9){				
-					cp->parameters[counter][ext_len+buf*2-1]='A'+cp->parameters[counter][ext_len+buf*2-1]-'0'-10;
+				if ((o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-1]-'0')>9){
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-1]-'0'-10;
 				}
-				cp->parameters[counter][ext_len+buf*2-2]=mp[bytecounter]/16+'0';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]=pBytes[idxByte]/16+'0';
 				//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-				if((cp->parameters[counter][ext_len+buf*2-2]-'0')>9){
-					cp->parameters[counter][ext_len+buf*2-2]='A'+cp->parameters[counter][ext_len+buf*2-2]-'0'-10;
+				if ((o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]-'0')>9){
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]='A'+o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]-'0'-10;
 				}
-				bytecounter++;
-				buf--;
+				idxByte++;
+				nBufferByte--;
 			}
 
 			break;
 			
 			//-------------------------------------------------Call/jmp far intersegment — memory operand redefinition---------------------------------------------------				
 case 'k'://Call/jmp far intersegment
-cp->par_count--;
-buf=0;//if 0x66 is present
-if(cp->prefix.opr==0x66){
-	buf=1;
+o_pCommand->m_nParameterCount--;
+nBufferByte=0;//if 0x66 is present
+if (o_pCommand->m_objPrefix.m_nOpr==0x66){
+	nBufferByte=1;
 }
-ext_len=5+buf+strlen(cp->parameters[0]);//'FAR '+ strlen(cp->parameters[0]),0
-temp_char1=(char*)malloc(ext_len);
-temp_char1[ext_len-1]=0;
-temp_char1[0]='F';
-temp_char1[1]='A';
-temp_char1[2]='R';
-temp_char1[3]='_';
-if(cp->prefix.opr==0x66){
-	temp_char1[4]='D';//dword
+nExtensionLength=5+nBufferByte+strlen(o_pCommand->m_pParameters[0]);//'FAR '+ strlen(cp->parameters[0]),0
+strTempText=(char*)malloc(nExtensionLength);
+strTempText[nExtensionLength-1]=0;
+strTempText[0]='F';//TODO strcpy
+strTempText[1]='A';
+strTempText[2]='R';
+strTempText[3]='_';
+if (o_pCommand->m_objPrefix.m_nOpr==0x66){
+	strTempText[4]='D';//dword
 }else{
-	temp_char1[4]='F';//fword
+	strTempText[4]='F';//fword
 }
-strcpy(temp_char1+5,cp->parameters[0]+1-buf);
+strcpy(strTempText+5,o_pCommand->m_pParameters[0]+1-nBufferByte);
 //printf("\nTEMP_CHAR1=%s\n",temp_char1);
-free(cp->parameters[0]);
-cp->parameters[0]=temp_char1;
+free(o_pCommand->m_pParameters[0]);
+o_pCommand->m_pParameters[0]=strTempText;
 break;
 			
 		}
-		counter++;
+		idxOperand++;
 	}
 	//-----------------------------------------------operands parsing----------------------------------------------------------------------------------------------------------------------------------------------------------	
 	
-	fseek(i_hFileTargetPE,ftell(i_hFileTargetPE)-com_len1+bytecounter,SEEK_SET);
-	fclose(hFileOpcodes);
+	fseek(i_hTargetFile,ftell(i_hTargetFile)-nBytesRead+idxByte,SEEK_SET);
+	fclose(hOpcodeFile);
 	return RET_SUCCESS;
 }
 
 //====================================================================================================
-IMAGE_SECTION_HEADER findCodeSection(FILE* i_hFileTargetPE) {
-IMAGE_SECTION_HEADER findCodeSection(FILE* hFile) {
+IMAGE_SECTION_HEADER findCodeSection(FILE* i_hTargetFile)
+{
 	//TODO findCodeSection should return code section file offset and file size, not IMAGE_SECTION_HEADER
 	//Search code section by AddressOfEntryPoint value
-	IMAGE_SECTION_HEADER res = { 0 };
-	DWORD int_buf;
-	WORD word_buf;
-	WORD NumberOfSections;
-	DWORD AddressOfEntryPoint;
-	int i = 0;
-	fseek(i_hFileTargetPE, 0x3c, SEEK_SET);
-	fread(&int_buf, 4, 1, i_hFileTargetPE); //'PE' offset in int_buf
+	IMAGE_SECTION_HEADER objSection = { 0 };
+	DWORD nPeHeaderOffset;
+	WORD nOptionalHeaderSize;
+	WORD nSectionCount;
+	DWORD nEntryPointRva;
+	int idx = 0;
+	fseek(i_hTargetFile, 0x3c, SEEK_SET);
+	fread(&nPeHeaderOffset, 4, 1, i_hTargetFile); //'PE' offset in int_buf
 	//printf("e_lfanew=%#x\n",int_buf);
-	fseek(i_hFileTargetPE, int_buf + 6, SEEK_SET);//fp on NumberOfSections
-	fread(&NumberOfSections, 2, 1, i_hFileTargetPE);
+	fseek(i_hTargetFile, nPeHeaderOffset + 6, SEEK_SET);//fp on NumberOfSections
+	fread(&nSectionCount, 2, 1, i_hTargetFile);
 	//int_buf=int_buf+sizeof(IMAGE_FILE_HEADER);//fp on SizeOfOptionalHeader-int_buf+sizeof(IMAGE_FILE_HEADER)+4/*'PE'*/-4/*2 positions back in IMAGE_FILE_HEADER*/
-	fseek(i_hFileTargetPE, int_buf + sizeof(IMAGE_FILE_HEADER), SEEK_SET);
-	fread(&word_buf, 2, 1, i_hFileTargetPE);//SizeOfOptionalHeader in word_buf
-	printf("SizeOfOptionalHeader=0x%04x\n", word_buf);
-	fseek(i_hFileTargetPE, 18, SEEK_CUR);//fp on AddressOfEntryPoint
-	fread(&AddressOfEntryPoint, 4, 1, i_hFileTargetPE);
-	printf("AddressOfEntryPoint=0x%08x\n", AddressOfEntryPoint);
-	printf("NumberOfSections=0x%04x\n", NumberOfSections);
-	fseek(i_hFileTargetPE, word_buf - 20, SEEK_CUR);//fp on 1st section
-	while (i != NumberOfSections) {
-		fread(&res, sizeof(IMAGE_SECTION_HEADER), 1, i_hFileTargetPE);
-		if ((AddressOfEntryPoint >= res.VirtualAddress) && (AddressOfEntryPoint < (res.VirtualAddress + res.Misc.VirtualSize))) {
-			return res;
+	fseek(i_hTargetFile, nPeHeaderOffset + sizeof(IMAGE_FILE_HEADER), SEEK_SET);
+	fread(&nOptionalHeaderSize, 2, 1, i_hTargetFile);//SizeOfOptionalHeader in word_buf
+	printf("SizeOfOptionalHeader=0x%04x\n", nOptionalHeaderSize);
+	fseek(i_hTargetFile, 18, SEEK_CUR);//fp on AddressOfEntryPoint
+	fread(&nEntryPointRva, 4, 1, i_hTargetFile);
+	printf("AddressOfEntryPoint=0x%08x\n", nEntryPointRva);
+	printf("NumberOfSections=0x%04x\n", nSectionCount);
+	fseek(i_hTargetFile, nOptionalHeaderSize - 20, SEEK_CUR);//fp on 1st section
+	while (idx != nSectionCount) {
+		fread(&objSection, sizeof(IMAGE_SECTION_HEADER), 1, i_hTargetFile);
+		if ((nEntryPointRva >= objSection.VirtualAddress) && (nEntryPointRva < (objSection.VirtualAddress + objSection.Misc.VirtualSize))) {
+			return objSection;
 		}
-		i++;
+		idx++;
 	}
 	printf("[ERROR] Failed to find code section.\n");
-	return res;
+	return objSection;
 }
 
 //====================================================================================================
-static int ExecDisassemble(FILE* i_hFileTargetPE, FILE* i_hFileDisassembly)
+static int disassembleFile(FILE* i_hTargetFile, FILE* o_hDisassemblyFile)
 {
 	SCommand objCommand;
-	IMAGE_SECTION_HEADER sSection;
-	unsigned idxCmdParam;
+	IMAGE_SECTION_HEADER objSection;
+	int idxCommandParameter;
 	int nRes = RET_SUCCESS;
-	long sectionEnd;
-	long filePos;
-	int numAvailableBytes;
+	long nSectionEndOffset;
+	long nFilePosition;
+	int nAvailableBytes;
 
-	sSection = findCodeSection(i_hFileTargetPE);
-	fseek(i_hFileTargetPE, sSection.PointerToRawData, SEEK_SET);
-	sectionEnd = (long)sSection.PointerToRawData + sSection.SizeOfRawData;
+	objSection = findCodeSection(i_hTargetFile);
+	fseek(i_hTargetFile, objSection.PointerToRawData, SEEK_SET);
+	nSectionEndOffset = (long)objSection.PointerToRawData + objSection.SizeOfRawData;
 	
-
-	while ((filePos = ftell(i_hFileTargetPE)) >= 0 &&
-		filePos < sectionEnd) {
-		numAvailableBytes = (sectionEnd - filePos > MAX_COMMAND_LEN) ? MAX_COMMAND_LEN : (int)(sectionEnd - filePos);
+	while ((nFilePosition = ftell(i_hTargetFile)) >= 0 &&
+		nFilePosition < nSectionEndOffset) {
+		nAvailableBytes = (nSectionEndOffset - nFilePosition > MAX_COMMAND_LEN) ? MAX_COMMAND_LEN : (int)(nSectionEndOffset - nFilePosition);
 
 		SCommand_Init(&objCommand);
-		nRes = SCommand_GetCommand(&objCommand, i_hFileTargetPE, numAvailableBytes);
+		nRes = SCommand_GetCommand(&objCommand, i_hTargetFile, nAvailableBytes);
 		if (nRes != RET_SUCCESS) {
 			nRes = 1;
 			break;
 		}
 
-		if (fprintf(i_hFileDisassembly, "%s", objCommand.com_text) < 0) {
+		if (fprintf(o_hDisassemblyFile, "%s", objCommand.m_strCommandText) < 0) {
 			nRes = ERR_FILE_OPERATION;
 			break;
 		}
 
-		idxCmdParam = 0;
-		while (idxCmdParam < objCommand.par_count) {
-			if (fprintf(i_hFileDisassembly, (idxCmdParam) ? ", %s" : " %s", objCommand.parameters[idxCmdParam]) < 0) {
+		idxCommandParameter = 0;
+		while (idxCommandParameter < objCommand.m_nParameterCount) {
+			if (fprintf(o_hDisassemblyFile, (idxCommandParameter) ? ", %s" : " %s", objCommand.m_pParameters[idxCommandParameter]) < 0) {
 				nRes = ERR_FILE_OPERATION;
 				goto LABEL_PARSING_LOOP_END;
 			}
 
-			++idxCmdParam;
+			++idxCommandParameter;
 		}
 
-		if (fprintf(i_hFileDisassembly, "\n") < 0) {
+		if (fprintf(o_hDisassemblyFile, "\n") < 0) {
 			nRes = ERR_FILE_OPERATION;
 			break;
 		}
@@ -2235,7 +2241,7 @@ LABEL_PARSING_LOOP_END:
 		SCommand_Destroy(&objCommand);
 	}
 
-	if (filePos < 0 || (filePos < sectionEnd &&
+	if (nFilePosition < 0 || (nFilePosition < nSectionEndOffset &&
 		nRes != RET_SUCCESS)) {
 		fprintf(stderr, "[ERROR] Failed to disassemble target PE file.\n");
 		return ERR_FILE_OPERATION;
@@ -2247,9 +2253,9 @@ LABEL_PARSING_LOOP_END:
 //====================================================================================================
 int main(int i_nArgc, char* i_ppArgv[])
 {
-	FILE* i_hFileTargetPE;
-	FILE* i_hFileDisassembly = stdout;
-	int result;
+	FILE* hTargetFile;
+	FILE* hDisassemblyFile = stdout;
+	int nResult;
 	
 	// Parse cmd args
 	if (i_nArgc < 2 || i_nArgc > 3) {
@@ -2258,30 +2264,30 @@ int main(int i_nArgc, char* i_ppArgv[])
 		return ERR_INVALID_ARGS;
 	}
 
-	if ((i_hFileTargetPE = fopen(i_ppArgv[1], "rb")) == NULL) {
+	if ((hTargetFile = fopen(i_ppArgv[1], "rb")) == NULL) {
 		printf("[ERROR] opening target PE file failed: %s\n", i_ppArgv[1]);
 		return ERR_FILE_OPERATION;
 	}
 
 	if (i_nArgc == 3) {
-		i_hFileDisassembly = fopen(i_ppArgv[2], "w");
-		if (i_hFileDisassembly == NULL) {
+		hDisassemblyFile = fopen(i_ppArgv[2], "w");
+		if (hDisassemblyFile == NULL) {
 			printf("[ERROR] opening output file failed : %s\n", i_ppArgv[2]);
-			fclose(i_hFileTargetPE);
+			fclose(hTargetFile);
 			return ERR_FILE_OPERATION;
 		}
 	}
 
 	// Perform disassembling
-	result = ExecDisassemble(i_hFileTargetPE, i_hFileDisassembly);
+	nResult = disassembleFile(hTargetFile, hDisassemblyFile);
 
 	// Cleanup
-	fclose(i_hFileTargetPE);
-	if (i_hFileDisassembly != stdout &&
-		fclose(i_hFileDisassembly) != 0) {
+	fclose(hTargetFile);
+	if (hDisassemblyFile != stdout &&
+		fclose(hDisassemblyFile) != 0) {
 		printf("[ERROR] writing output file failed: %s\n", i_ppArgv[2]);
 		return ERR_FILE_OPERATION;
 	}
 	
-	return result;
+	return nResult;
 }
