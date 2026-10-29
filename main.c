@@ -43,6 +43,47 @@
 #define FILEPATH_OPCODES "opcodes.txt" //TODO TEXT("opcodes.txt")
 
 
+static const char* const g_colStrRegisters8[] = {
+	"al", "cl", "dl", "bl", "sd", "bd", "ed", "dd"
+};
+static const char* const g_colStrRegisters16[] = {
+	"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"
+};
+static const char* const g_colStrRegisters32[] = {
+	"eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi"
+};
+static const char* const g_colStrRegistersSegment[] = {
+	"es", "cs", "ss", "ds", "fs", "gs"
+};
+static const char* const g_colStrRegistersDebug[] = {
+	"dr0", "dr1", "dr2", "dr3", "dr4", "dr5", "dr6", "dr7"
+};
+static const char* const g_colStrRegistersControl[] = {
+	"cr0", "cr1", "cr2", "cr3", "cr4", "cr5", "cr6", "cr7"
+};
+static const char* const g_colStrRegistersAddr16Sets[] = {
+	"bx+si", "bx+di", "bp+si", "bp+di", "si", "di", "bp", "bx"
+};
+
+
+static const char* getGeneralPurposeRegister(int i_nRegisterIdx, int i_nBitness)
+{
+	if (i_nRegisterIdx < 0 || i_nRegisterIdx >= 8) {
+		return NULL;
+	}
+	if (i_nBitness == 8) {
+		return g_colStrRegisters8[i_nRegisterIdx];
+	}
+	if (i_nBitness == 16) {
+		return g_colStrRegisters16[i_nRegisterIdx];
+	}
+	if (i_nBitness == 32) {
+		return g_colStrRegisters32[i_nRegisterIdx];
+	}
+	return NULL;
+}
+
+
 typedef struct
 {
 	unsigned char*	m_pData;
@@ -419,6 +460,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 	unsigned char* pBytes;
 	char* strBitString;
 	char* strTempText;
+	const char* pStrRegister;
 	unsigned char nBufferByte,nBufferByte2;
 	
 	//printf("Begin GetCommand:\n");
@@ -626,110 +668,11 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				}
 			}
 			//in ext_len number of register
-			switch (nExtensionLength){
-			case 0://al ax eax
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "al");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "ax");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "eax");
-					}
-				}
-				break;
-			case 1://ecx
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "cl");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "cx");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "ecx");
-					}
-				}
-				break;
-				
-				
-			case 2://edx
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "dl");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "dx");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "edx");
-					}
-				}
-				break;
-
-			case 3://ebx
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "bl");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "bx");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "ebx");
-					}
-				}
-				break;
-
-			case 4://esp
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "sd");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "sp");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "esp");
-					}
-				}
-				break;						
-				
-			case 5://ebp
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "bd");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "bp");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "ebp");
-					}
-				}
-				break;
-				
-			case 6://esi
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "ed");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "si");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "esi");
-					}
-				}
-				break;
-				
-			case 7://edi
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "dd");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "di");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "edi");
-					}
-				}
-				break;
+			pStrRegister = getGeneralPurposeRegister(nExtensionLength,
+				o_pCommand->m_objSpecialFields.m_nW == 0 ? 8 :
+				(o_pCommand->m_objPrefix.m_nOpr == 0x66 ? 16 : 32));
+			if (pStrRegister != NULL) {
+				strcpy(o_pCommand->m_pParameters[idxOperand], pStrRegister);
 			}
 			break;
 			
@@ -747,110 +690,11 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				nExtensionLength=o_pCommand->m_objModrm.m_nRm;
 			}	
 			//in ext_len number of register
-			switch (nExtensionLength){
-			case 0://al ax eax
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "al");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "ax");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "eax");
-					}
-				}
-				break;
-			case 1://ecx
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "cl");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "cx");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "ecx");
-					}
-				}
-				break;
-				
-				
-			case 2://edx
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "dl");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "dx");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "edx");
-					}
-				}
-				break;
-
-			case 3://ebx
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "bl");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "bx");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "ebx");
-					}
-				}
-				break;
-
-			case 4://esp
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "sd");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "sp");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "esp");
-					}
-				}
-				break;						
-				
-			case 5://ebp
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "bd");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "bp");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "ebp");
-					}
-				}
-				break;
-				
-			case 6://esi
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "ed");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "si");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "esi");
-					}
-				}
-				break;
-				
-			case 7://edi
-				if (o_pCommand->m_objSpecialFields.m_nW==0){
-					strcpy(o_pCommand->m_pParameters[idxOperand], "dd");
-				}else{
-					if (o_pCommand->m_objPrefix.m_nOpr==0x66){//66h - operand-size prefix
-						strcpy(o_pCommand->m_pParameters[idxOperand], "di");
-						break;
-					}else{
-						strcpy(o_pCommand->m_pParameters[idxOperand], "edi");
-					}
-				}
-				break;
+			pStrRegister = getGeneralPurposeRegister(nExtensionLength,
+				o_pCommand->m_objSpecialFields.m_nW == 0 ? 8 :
+				(o_pCommand->m_objPrefix.m_nOpr == 0x66 ? 16 : 32));
+			if (pStrRegister != NULL) {
+				strcpy(o_pCommand->m_pParameters[idxOperand], pStrRegister);
 			}
 			break;
 			
@@ -867,41 +711,11 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				}
 			}
 			//in ext_len number of register
-			switch(nExtensionLength){
-			case 0://es
-				strcpy(o_pCommand->m_pParameters[idxOperand], "es");
-				break;
-				
-			case 1://cs
-				strcpy(o_pCommand->m_pParameters[idxOperand], "cs");
-				break;
-				
-			case 2://ss
-				strcpy(o_pCommand->m_pParameters[idxOperand], "ss");
-				break;
-
-			case 3://ds
-				strcpy(o_pCommand->m_pParameters[idxOperand], "ds");
-				break;
-
-			case 4://fs
-				strcpy(o_pCommand->m_pParameters[idxOperand], "fs");
-				break;						
-				
-			case 5://gs
-				strcpy(o_pCommand->m_pParameters[idxOperand], "gs");
-				break;
-				
-			case 6://reserved1
+			if (nExtensionLength >= 0 && nExtensionLength < 6) {
+				strcpy(o_pCommand->m_pParameters[idxOperand], g_colStrRegistersSegment[nExtensionLength]);
+			}else if (nExtensionLength == 6 || nExtensionLength == 7) {
 				free(pBytes);
-				return RET_ERROR;//error
-				break;
-				
-			case 7://reserved2
-				free(pBytes);
-				return RET_ERROR;//error
-				free(pBytes);
-				break;
+				return RET_ERROR;
 			}
 			break;
 			
@@ -913,16 +727,16 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			
 			//-------------------------------------------------al ax eax---------------------------------------------------
 		case 'a':
-			if (o_pCommand->m_objSpecialFields.m_nW==0){//al
-				strcpy(o_pCommand->m_pParameters[idxOperand], "al");
-			}else{
-				strcpy(o_pCommand->m_pParameters[idxOperand],
-					(o_pCommand->m_objPrefix.m_nOpr == 0x66) ? "ax" : "eax");
+			pStrRegister = getGeneralPurposeRegister(0,
+				o_pCommand->m_objSpecialFields.m_nW == 0 ? 8 :
+				(o_pCommand->m_objPrefix.m_nOpr == 0x66 ? 16 : 32));
+			if (pStrRegister != NULL) {
+				strcpy(o_pCommand->m_pParameters[idxOperand], pStrRegister);
 			}
 			break;
 			//------------------------------------------------- cl ---------------------------------------------------			
 		case 'b'://cl
-			strcpy(o_pCommand->m_pParameters[idxOperand], "cl");
+			strcpy(o_pCommand->m_pParameters[idxOperand], g_colStrRegisters8[1]);
 			break;
 			
 			//------------------------------------------------- dr0-7 ---------------------------------------------------
@@ -933,38 +747,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				nBufferByte=g_objOpcodesData.m_pData[MODRM_FIELD_OFFSET+3];
 				nExtensionLength = (nBufferByte == 'e') ? o_pCommand->m_objModrm.m_nReg : o_pCommand->m_objModrm.m_nRm;
 			}
-			switch(nExtensionLength){
-			case 0://dr0
-				strcpy(o_pCommand->m_pParameters[idxOperand], "dr0");
-				break;
-				
-			case 1://dr1
-				strcpy(o_pCommand->m_pParameters[idxOperand], "dr1");
-				break;
-				
-			case 2://dr2
-				strcpy(o_pCommand->m_pParameters[idxOperand], "dr2");
-				break;
-
-			case 3://dr3
-				strcpy(o_pCommand->m_pParameters[idxOperand], "dr3");
-				break;
-
-			case 4://dr4
-				strcpy(o_pCommand->m_pParameters[idxOperand], "dr4");
-				break;						
-				
-			case 5://dr5
-				strcpy(o_pCommand->m_pParameters[idxOperand], "dr5");
-				break;
-				
-			case 6://dr6
-				strcpy(o_pCommand->m_pParameters[idxOperand], "dr6");
-				break;
-				
-			case 7://dr7
-				strcpy(o_pCommand->m_pParameters[idxOperand], "dr7");
-				break;
+			if (nExtensionLength >= 0 && nExtensionLength < 8) {
+				strcpy(o_pCommand->m_pParameters[idxOperand], g_colStrRegistersDebug[nExtensionLength]);
 			}
 			break;
 			//------------------------------------------------- cr0-7 ---------------------------------------------------			
@@ -978,38 +762,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				nBufferByte=g_objOpcodesData.m_pData[MODRM_FIELD_OFFSET+3];
 				nExtensionLength = (nBufferByte == 'e') ? o_pCommand->m_objModrm.m_nReg : o_pCommand->m_objModrm.m_nRm;
 			}
-			switch (nExtensionLength){
-			case 0://cr0
-				strcpy(o_pCommand->m_pParameters[idxOperand], "cr0");
-				break;
-				
-			case 1://cr1
-				strcpy(o_pCommand->m_pParameters[idxOperand], "cr1");
-				break;
-				
-			case 2://cr2
-				strcpy(o_pCommand->m_pParameters[idxOperand], "cr2");
-				break;
-
-			case 3://cr3
-				strcpy(o_pCommand->m_pParameters[idxOperand], "cr3");
-				break;
-
-			case 4://cr4
-				strcpy(o_pCommand->m_pParameters[idxOperand], "cr4");
-				break;						
-				
-			case 5://cr5
-				strcpy(o_pCommand->m_pParameters[idxOperand], "cr5");
-				break;
-				
-			case 6://cr6
-				strcpy(o_pCommand->m_pParameters[idxOperand], "cr6");
-				break;
-				
-			case 7://cr7
-				strcpy(o_pCommand->m_pParameters[idxOperand], "cr7");
-				break;
+			if (nExtensionLength >= 0 && nExtensionLength < 8) {
+				strcpy(o_pCommand->m_pParameters[idxOperand], g_colStrRegistersControl[nExtensionLength]);
 			}
 			break;
 			
@@ -1060,23 +814,14 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 
 			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//0x67 not present
 				switch(o_pCommand->m_objModrm.m_nRm){
-				case 0://eax
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "eax", 3);
-					nBufferByte=4;
-					break;
-					
-				case 1://ecx
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ecx", 3);
-					nBufferByte=4;
-					break;
-					
-				case 2://edx
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "edx", 3);
-					nBufferByte=4;
-					break;
-					
-				case 3://ebx
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ebx", 3);
+				case 0:
+				case 1:
+				case 2:
+				case 3:
+				case 6:
+				case 7:
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1,
+						g_colStrRegisters32[o_pCommand->m_objModrm.m_nRm], 3);
 					nBufferByte=4;
 					break;
 					
@@ -1087,75 +832,13 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 					o_pCommand->m_objSib.m_nSib=pBytes[idxByte];
 					++idxByte;//SIB parsed
 
-					switch(o_pCommand->m_objSib.m_nBase){
-					case 0:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "eax", 3);
-						break;
-						
-					case 1:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ecx", 3);
-						break;
-						
-					case 2:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "edx", 3);
-						break;
-						
-					case 3:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ebx", 3);
-						break;
-						
-					case 4:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "esp", 3);
-						break;
-						
-					case 5://[*]
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ebp", 3);
-						break;
-						
-					case 6:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "esi", 3);
-						break;
-						
-					case 7:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "edi", 3);
-						break;
-					}
+					pStrRegister = g_colStrRegisters32[o_pCommand->m_objSib.m_nBase];
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, pStrRegister, 3);
 					
 					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 4, "+e", 2);
 					
-					switch(o_pCommand->m_objSib.m_nIndex){
-					case 0:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "ax", 2);
-						break;
-						
-					case 1:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "cx", 2);
-						break;
-						
-					case 2:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "dx", 2);
-						break;
-						
-					case 3:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "bx", 2);
-						break;
-						
-					case 4:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "sp", 2);
-						break;
-						
-					case 5://[*]
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "bp", 2);
-						break;
-						
-					case 6:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "si", 2);
-						break;
-						
-					case 7:
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6, "di", 2);
-						break;
-					}
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6,
+						g_colStrRegisters16[o_pCommand->m_objSib.m_nIndex], 2);
 					
 					o_pCommand->m_pParameters[idxOperand][nCommandLength+8]='*';
 					nExtensionLength=0;
@@ -1189,20 +872,12 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 						}
 						nBufferByte=9;
 					}else{
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "ebp", 3);
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1,
+							g_colStrRegisters32[5], 3);
 						nBufferByte=4;
 					}
 					break;
 					
-				case 6://esi
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "esi", 3);
-					nBufferByte=4;
-					break;
-					
-				case 7://edi
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "edi", 3);
-					nBufferByte=4;
-					break;	
 				}
 				nExtensionLength=o_pCommand->m_objModrm.m_nMod*o_pCommand->m_objModrm.m_nMod;//in ext_len number of displacement bytes
 				if (nExtensionLength!=0){
@@ -1239,66 +914,26 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]=']';
 				o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]=0;
 			}else{//0x67 present
-				switch (o_pCommand->m_objModrm.m_nRm){
-				case 0:
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bx+si", 5);
-					nBufferByte=6;
-					break;
-					
-				case 1:
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bx+di", 5);
-					nBufferByte=6;
-					break;
-					
-				case 2:
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bp+si", 5);
-					nBufferByte=6;
-					break;
-					
-				case 3:
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bp+di", 5);
-					nBufferByte=6;
-					break;
-					
-				case 4:
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "si", 2);
-					nBufferByte=3;
-					break;
-					
-				case 5:
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "di", 2);
-					nBufferByte=3;
-					break;
-					
-				case 6://can be disp16 only
-					if (0 == o_pCommand->m_objModrm.m_nMod ){
-						nExtensionLength=2;
-						while (nExtensionLength != 0){
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]=pBytes[idxByte]%16+'0';
-							//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
-							//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0') > 9){
-								o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0'-10;
-							}
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]=pBytes[idxByte]/16+'0';
-							//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0') > 9){
-								o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0'-10;
-							}
-							++idxByte;
-							--nExtensionLength;
+				if (o_pCommand->m_objModrm.m_nRm == 6 && o_pCommand->m_objModrm.m_nMod == 0){
+					nExtensionLength=2;
+					while (nExtensionLength != 0){
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]=pBytes[idxByte]%16+'0';
+						if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0') > 9){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0'-10;
 						}
-						nBufferByte=5;
-					}else{
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bp", 2);
-						nBufferByte=3;
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]=pBytes[idxByte]/16+'0';
+						if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0') > 9){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0'-10;
+						}
+						++idxByte;
+						--nExtensionLength;
 					}
-					break;
-					
-				case 7:
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "bx", 2);
-					nBufferByte=3;
-					break;
+					nBufferByte=5;
+				}else{
+					pStrRegister = g_colStrRegistersAddr16Sets[o_pCommand->m_objModrm.m_nRm];
+					nBufferByte = o_pCommand->m_objModrm.m_nRm < 4 ? 6 : 3;
+					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1,
+						pStrRegister, nBufferByte - 1);
 				}
 				
 				nExtensionLength=o_pCommand->m_objModrm.m_nMod;//in ext_len number of displacement bytes
@@ -1419,7 +1054,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			
 			//dx(ex. variable port)----------------------------------------------------------------------------------------------------
 		case 'v':
-			strcpy(o_pCommand->m_pParameters[idxOperand], "dx");
+			strcpy(o_pCommand->m_pParameters[idxOperand], g_colStrRegisters16[2]);
 			break;
 			//tttn-----------------------------------------------------------------------------------------------------------------------------------
 		case 't'://tttn
