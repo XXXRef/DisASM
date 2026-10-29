@@ -1405,28 +1405,28 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			break;
 			
 			//-------------------------------------------------Call/jmp far intersegment — memory operand redefinition---------------------------------------------------				
-case 'k'://Call/jmp far intersegment
-o_pCommand->m_nParameterCount--;
-nBufferByte=0;//if 0x66 is present
-if (o_pCommand->m_objPrefix.m_nOpr==0x66){
-	nBufferByte=1;
-}
-nExtensionLength=5+nBufferByte+strlen(o_pCommand->m_pParameters[0]);// 'FAR '+ strlen(cp->parameters[0]),0
-strTempText=(char*)malloc(nExtensionLength);
-strTempText[nExtensionLength-1]=0;
-strcpy(strTempText, "FAR_");
-strTempText[4] = (o_pCommand->m_objPrefix.m_nOpr == 0x66) ? 'D' : 'F'; // dword/fword
-strcpy(strTempText+5,o_pCommand->m_pParameters[0]+1-nBufferByte);
-//printf("\nTEMP_CHAR1=%s\n",temp_char1);
-free(o_pCommand->m_pParameters[0]);
-o_pCommand->m_pParameters[0]=strTempText;
-break;
-			
+		case 'k'://Call/jmp far intersegment
+			o_pCommand->m_nParameterCount--;
+			nBufferByte = 0;//if 0x66 is present
+			if (o_pCommand->m_objPrefix.m_nOpr == 0x66) {
+				nBufferByte = 1;
+			}
+			nExtensionLength = 5 + nBufferByte + strlen(o_pCommand->m_pParameters[0]);// 'FAR '+ strlen(cp->parameters[0]),0
+			strTempText = (char*)malloc(nExtensionLength);
+			strTempText[nExtensionLength - 1] = 0;
+			strcpy(strTempText, "FAR_");
+			strTempText[4] = (o_pCommand->m_objPrefix.m_nOpr == 0x66) ? 'D' : 'F'; // dword/fword
+			strcpy(strTempText + 5, o_pCommand->m_pParameters[0] + 1 - nBufferByte);
+			//printf("\nTEMP_CHAR1=%s\n",temp_char1);
+			free(o_pCommand->m_pParameters[0]);
+			o_pCommand->m_pParameters[0] = strTempText;
+			break;
+
 		}
 		++idxOperand;
 	}
 	//-----------------------------------------------operands parsing----------------------------------------------------------------------------------------------------------------------------------------------------------	
-	
+
 	fseek(i_hTargetFile,ftell(i_hTargetFile)-nBytesRead+idxByte,SEEK_SET);
 	return RET_SUCCESS;
 }
