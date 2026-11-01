@@ -1039,11 +1039,11 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			nBufferByte=2;
 			while (nBufferByte != 0){//0,1
 				nBufferByte--;
-				o_pCommand->m_pParameters[idxOperand][nBufferByte*2]=pBytes[idxByte]/16+'0';
+				o_pCommand->m_pParameters[idxOperand][nBufferByte*2] = pBytes[idxByte]/16 + '0';
 				if ( (o_pCommand->m_pParameters[idxOperand][nBufferByte*2]-'0') > 9){
-					o_pCommand->m_pParameters[idxOperand][nBufferByte*2]='A'+o_pCommand->m_pParameters[idxOperand][0]-'0'-10;
+					o_pCommand->m_pParameters[idxOperand][nBufferByte*2]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte*2]-'0'-10;
 				}
-				o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]=pBytes[idxByte]%16+'0';
+				o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1] = pBytes[idxByte] % 16 + '0';
 				if ( (o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]-'0') > 9 ){
 					o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]-'0'-10;
 				}
