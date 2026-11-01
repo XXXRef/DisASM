@@ -44,7 +44,7 @@
 
 
 static const char* const g_colStrRegisters8[] = {
-	"al", "cl", "dl", "bl", "sd", "bd", "ed", "dd"
+	"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"
 };
 static const char* const g_colStrRegisters16[] = {
 	"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"
