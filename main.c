@@ -65,6 +65,14 @@ static const char* const g_colStrRegistersAddr16Sets[] = {
 	"bx+si", "bx+di", "bp+si", "bp+di", "si", "di", "bp", "bx"
 };
 
+static const char g_colHexDigits[] = "0123456789ABCDEF";
+
+static void writeHexByte(char* i_pDestination, unsigned int i_nValue)
+{
+	i_pDestination[0] = g_colHexDigits[(i_nValue >> 4) & 0x0F];
+	i_pDestination[1] = g_colHexDigits[i_nValue & 0x0F];
+}
+
 
 static const char* getGeneralPurposeRegister(int i_nRegisterIdx, int i_nBitness)
 {
@@ -866,24 +874,14 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 					if (o_pCommand->m_objModrm.m_nMod==0){
 						nExtensionLength=4;
 						while (nExtensionLength != 0){
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]=pBytes[idxByte]%16+'0';
-							//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
-							//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0')>9){
-								o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0'-10;
-							}
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]=pBytes[idxByte]/16+'0';
-							//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0')>9){
-								o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0'-10;
-							}
+							writeHexByte(o_pCommand->m_pParameters[idxOperand] + nCommandLength + nExtensionLength * 2 - 1,
+								pBytes[idxByte]);
 							++idxByte;
 							--nExtensionLength;
 						}
 						nBufferByte=9;
 					}else{
-						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1,
-							g_colStrRegisters32[5], 3);
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, g_colStrRegisters32[5], 3);
 						nBufferByte=4;
 					}
 					break;
@@ -898,30 +896,15 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				if (nExtensionLength!=0){
 					if ((nExtensionLength==1) && (pBytes[idxByte]>0x7f)){//1 byte sign extended
 						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='-';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]=(0x100-pBytes[idxByte])/16+'0';
-						if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]-'0')>9){
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]-'0'-10;
-						}
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]=(0x100-pBytes[idxByte])%16+'0';
-						if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]-'0')>9){
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]-'0'-10;
-						}
+						writeHexByte(o_pCommand->m_pParameters[idxOperand] + nCommandLength + nBufferByte + 1,
+							0x100u - pBytes[idxByte]);
 					}else{
 						if (nBufferByte!=0){
 							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='+';
 						}
 						while (nExtensionLength!=0){
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]=pBytes[idxByte]%16+'0';
-							//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
-							//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]-'0')>9){
-								o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]-'0'-10;
-							}
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]=pBytes[idxByte]/16+'0';
-							//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-							if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]-'0')>9){
-								o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]-'0'-10;
-							}
+							writeHexByte(o_pCommand->m_pParameters[idxOperand] + nCommandLength + nBufferByte + nExtensionLength * 2 - 1,
+								pBytes[idxByte]);
 							++idxByte;
 							--nExtensionLength;
 						}
@@ -934,14 +917,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				if (o_pCommand->m_objModrm.m_nRm == 6 && o_pCommand->m_objModrm.m_nMod == 0){
 					nExtensionLength=2;
 					while (nExtensionLength != 0){
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]=pBytes[idxByte]%16+'0';
-						if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0') > 9){
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2]-'0'-10;
-						}
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]=pBytes[idxByte]/16+'0';
-						if ((o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0') > 9){
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nExtensionLength*2-1]-'0'-10;
-						}
+						writeHexByte(o_pCommand->m_pParameters[idxOperand] + nCommandLength + nExtensionLength * 2 - 1,
+							pBytes[idxByte]);
 						++idxByte;
 						--nExtensionLength;
 					}
@@ -958,29 +935,14 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 					
 					if ((nExtensionLength==1) && (pBytes[idxByte]>0x7f)){//1 byte sign extended
 						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='-';
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]=(0x100-pBytes[idxByte])/16+'0';
-						if ( (o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]-'0') > 9 ){
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]-'0'-10;
-						}
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]=(0x100-pBytes[idxByte])%16+'0';
-						if ( (o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]-'0') > 9 ){
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]-'0'-10;
-						}
+						writeHexByte(o_pCommand->m_pParameters[idxOperand] + nCommandLength + nBufferByte + 1,
+							0x100u - pBytes[idxByte]);
 					}else{
 						
 						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='+';
 						while (nExtensionLength != 0){
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]=pBytes[idxByte]%16+'0';
-							//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
-							//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-							if ( (o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]-'0') > 9){
-								o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]-'0'-10;
-							}
-							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]=pBytes[idxByte]/16+'0';
-							//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-							if ( (o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]-'0') > 9){
-								o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2-1]-'0'-10;
-							}
+							writeHexByte(o_pCommand->m_pParameters[idxOperand] + nCommandLength + nBufferByte + nExtensionLength * 2 - 1,
+								pBytes[idxByte]);
 							++idxByte;
 							--nExtensionLength;
 						}
@@ -999,14 +961,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			if (1 == o_pCommand->m_objSpecialFields.m_nS){//1byte imm
 				if (pBytes[idxByte] > 0x7F){//-
 					o_pCommand->m_pParameters[idxOperand][0]='-';
-					o_pCommand->m_pParameters[idxOperand][1]=(0x100-pBytes[idxByte])/16+'0';
-					o_pCommand->m_pParameters[idxOperand][2]=(0x100-pBytes[idxByte])%16+'0';
-					if ( (o_pCommand->m_pParameters[idxOperand][1]-'0') > 9 ){
-						o_pCommand->m_pParameters[idxOperand][1]='A'+o_pCommand->m_pParameters[idxOperand][1]-'0'-10;
-					}
-					if ( (o_pCommand->m_pParameters[idxOperand][2]-'0') > 9 ){
-						o_pCommand->m_pParameters[idxOperand][2]='A'+o_pCommand->m_pParameters[idxOperand][2]-'0'-10;
-					}
+					writeHexByte(o_pCommand->m_pParameters[idxOperand] + 1, 0x100u - pBytes[idxByte]);
 					o_pCommand->m_pParameters[idxOperand][3]=0;
 					++idxByte;
 					break;
@@ -1020,17 +975,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			o_pCommand->m_pParameters[idxOperand][nExtensionLength*2]=0;
 
 			while (nExtensionLength!=0){
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-1]=pBytes[idxByte]%16+'0';
-				//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
-				//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-				if ( (o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-1]-'0') > 9){
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-1]-'0'-10;
-				}
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-2]=pBytes[idxByte]/16+'0';
-				//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-				if ( (o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-2]-'0') > 9 ){
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-2]='A'+o_pCommand->m_pParameters[idxOperand][nExtensionLength*2-2]-'0'-10;
-				}
+				writeHexByte(o_pCommand->m_pParameters[idxOperand] + nExtensionLength * 2 - 2,
+					pBytes[idxByte]);
 				++idxByte;
 				--nExtensionLength;
 			}
@@ -1039,14 +985,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			
 			//8bit immediate----------------------------------------------------------------------------------------------------
 		case '8':
-			o_pCommand->m_pParameters[idxOperand][0]=pBytes[idxByte]/16+'0';
-			if ( (o_pCommand->m_pParameters[idxOperand][0]-'0') > 9 ){
-				o_pCommand->m_pParameters[idxOperand][0]='A'+o_pCommand->m_pParameters[idxOperand][0]-'0'-10;
-			}
-			o_pCommand->m_pParameters[idxOperand][1]=pBytes[idxByte]%16+'0';
-			if ( (o_pCommand->m_pParameters[idxOperand][1]-'0') > 9 ){
-				o_pCommand->m_pParameters[idxOperand][1]='A'+o_pCommand->m_pParameters[idxOperand][1]-'0'-10;
-			}
+			writeHexByte(o_pCommand->m_pParameters[idxOperand], pBytes[idxByte]);
 			o_pCommand->m_pParameters[idxOperand][2]=0;
 			++idxByte;
 			break;
@@ -1056,14 +995,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			nBufferByte=2;
 			while (nBufferByte != 0){//0,1
 				nBufferByte--;
-				o_pCommand->m_pParameters[idxOperand][nBufferByte*2] = pBytes[idxByte]/16 + '0';
-				if ( (o_pCommand->m_pParameters[idxOperand][nBufferByte*2]-'0') > 9){
-					o_pCommand->m_pParameters[idxOperand][nBufferByte*2]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte*2]-'0'-10;
-				}
-				o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1] = pBytes[idxByte] % 16 + '0';
-				if ( (o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]-'0') > 9 ){
-					o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte*2+1]-'0'-10;
-				}
+				writeHexByte(o_pCommand->m_pParameters[idxOperand] + nBufferByte * 2, pBytes[idxByte]);
 				++idxByte;
 			}
 			o_pCommand->m_pParameters[idxOperand][4]=0;
@@ -1197,14 +1129,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			o_pCommand->m_pParameters[idxOperand]+=4;
 			nBufferByte2 = (o_pCommand->m_objPrefix.m_nOpr == 0x66) ? 4 : 6; //0x67 present-4433:2211 //6655:44332211
 			while (nExtensionLength!=(int)nBufferByte2){
-				o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2-1]=pBytes[idxByte]/16+'0';
-				o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]=pBytes[idxByte]%16+'0';
-				if ((o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2-1]-'0')>9){
-					o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2-1]-'0'-10;
-				}
-				if ((o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]-'0')>9){
-					o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]='A'+o_pCommand->m_pParameters[idxOperand][nBufferByte-255+(nBufferByte2-nExtensionLength)*2]-'0'-10;
-				}
+				writeHexByte(o_pCommand->m_pParameters[idxOperand] + nBufferByte - 255 + (nBufferByte2 - nExtensionLength) * 2 - 1,
+					pBytes[idxByte]);
 				++idxByte;
 				++nExtensionLength;
 				if ((nBufferByte2-nExtensionLength)==2){
@@ -1359,17 +1285,8 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2]=']';
 
 			while (nBufferByte!=0){
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-1]=pBytes[idxByte]%16+'0';
-				//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
-				//printf("\tcp->parameters[counter][4+ext_len*2]:%d\n",cp->parameters[counter][4+ext_len*2]);
-				if ((o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-1]-'0')>9){
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-1]='A'+o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-1]-'0'-10;
-				}
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]=pBytes[idxByte]/16+'0';
-				//printf("\tcp->parameters[counter][4+ext_len*2-1]:%d\n",cp->parameters[counter][4+ext_len*2-1]);
-				if ((o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]-'0')>9){
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]='A'+o_pCommand->m_pParameters[idxOperand][nExtensionLength+nBufferByte*2-2]-'0'-10;
-				}
+				writeHexByte(o_pCommand->m_pParameters[idxOperand] + nExtensionLength + nBufferByte * 2 - 2,
+					pBytes[idxByte]);
 				++idxByte;
 				--nBufferByte;
 			}
