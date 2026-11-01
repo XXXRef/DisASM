@@ -646,7 +646,6 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 	//-----------------------------------------------operands parsing----------------------------------------------------------------------------------------------------------------------------------------------------------	
 	while (idxOperand<o_pCommand->m_nParameterCount){
 		switch(o_pCommand->m_strParameters[idxOperand]){
-			
 		case 'r'://reg1
 			if (o_pCommand->m_objSpecialFields.m_nReg!=-128){//reg (reg field is always last 3 bytes of opcode)
 				nExtensionLength=o_pCommand->m_objSpecialFields.m_nReg;
@@ -1083,71 +1082,26 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			}
 			o_pCommand->m_strCommandText=(char*)realloc( o_pCommand->m_strCommandText,nExtensionLength+3);//????????? ??? ??????//command + 2 chars + 0
 			//in ext_len position of zero in com_text
-			switch(o_pCommand->m_objSpecialFields.m_nTttn){
-			case 0://overflow
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "o");
-				break;
-				
-			case 1://no overflow
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "no");
-				break;
-				
-			case 2://below
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "b");
-				break;
+			char* pColStrTttn[16] = {
+				"o"/*overflow*/,
+				"no"/*no overflow*/,
+				"b"/*below*/,
+				"nb"/*not below*/,
+				"z"/*zero*/,
+				"nz"/*not zero*/,
+				"na"/*not above*/,
+				"a"/*above*/,
+				"s"/*sign*/,
+				"ns"/*no sign*/,
+				"p"/*parity*/,
+				"np"/*not parity*/,
+				"l"/*less*/,
+				"nl"/*not less*/,
+				"ng"/*not greater*/,
+				"g"/*greater*/
+			};
+			strcpy(o_pCommand->m_strCommandText + nExtensionLength, pColStrTttn[o_pCommand->m_objSpecialFields.m_nTttn]);
 
-			case 3://not below
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "nb");
-				break;
-
-			case 4://zero
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "z");
-				break;						
-				
-			case 5://not zero
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "nz");
-				break;
-				
-			case 6://not above
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "na");
-				break;
-				
-			case 7://above
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "a");
-				break;
-				
-			case 8://sign
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "s");
-				break;
-				
-			case 9://no sign
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "ns");
-				break;
-				
-			case 10://parity
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "p");
-				break;
-
-			case 11://not parity
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "np");
-				break;
-
-			case 12://less
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "l");
-				break;						
-				
-			case 13://not less
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "nl");
-				break;
-				
-			case 14://not greater
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "ng");
-				break;
-				
-			case 15://greater
-				strcpy(o_pCommand->m_strCommandText + nExtensionLength, "g");
-				break;
-			}
 			break;
 			
 			//f: pushf -/w/d, pusha -/w/d, popf -/w/d, popa -/w/d: modification---------------------------------------------------------------------------------------
