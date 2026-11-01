@@ -798,7 +798,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				
 				break;
 			case 0x64: //fs
-				o_pCommand->m_pParameters[idxOperand][nCommandLength]='C';
+				o_pCommand->m_pParameters[idxOperand][nCommandLength]='F';
 				
 				break;
 			case 0x65: //gs
@@ -1191,7 +1191,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 					
 					break;
 				case 0x64: //fs
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='C';
+					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='F';
 					
 					break;
 				case 0x65: //gs
@@ -1368,7 +1368,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
 				break;
 			case 0x64: //fs
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='C';
+				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='F';
 				break;
 			case 0x65: //gs
 				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='G';
