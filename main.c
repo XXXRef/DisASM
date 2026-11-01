@@ -457,16 +457,13 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 	UByte objTempByte;
 	size_t opcodePosition=0;
 	int idxByte=0,nCommandOffset,nExtensionLength=0,idxOperand=0,nCommandLength,nBytesRead;
-	unsigned char* pBytes;
+	unsigned char pBytes[MAX_COMMAND_LEN];
 	char* strBitString;
 	char* strTempText;
 	const char* pStrRegister;
 	unsigned char nBufferByte,nBufferByte2;
 	
 	//printf("Begin GetCommand:\n");
-
-
-	pBytes=(unsigned char*)malloc(MAX_COMMAND_LEN);//mem allocating
 	nBytesRead=fread(pBytes, 1, i_nAvailableBytes, i_hTargetFile);//reading data block, !file pointer+=MAX_COMMAND_LEN!
 	
 	if (nBytesRead==0){//file end
@@ -504,6 +501,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 		if ((nCommandOffset=findCommand(o_pCommand->m_objOpcode.m_strBits,strBitString))!=-1){//command found
 			break;//we can exit, buf<4
 		}
+		free(strBitString);
 		++nBufferByte;
 	}
 	
@@ -714,7 +712,6 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			if (nExtensionLength >= 0 && nExtensionLength < 6) {
 				strcpy(o_pCommand->m_pParameters[idxOperand], g_colStrRegistersSegment[nExtensionLength]);
 			}else if (nExtensionLength == 6 || nExtensionLength == 7) {
-				free(pBytes);
 				return RET_ERROR;
 			}
 			break;
