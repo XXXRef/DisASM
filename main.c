@@ -1287,14 +1287,14 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			if (o_pCommand->m_objPrefix.m_nLnr==0xf2){//repnz
 				strTempText=(char*)malloc(nExtensionLength+7);//'repne ',0
 				strcpy(strTempText, "repnz_");
-				strTempText[nExtensionLength+7]=0;
+				strTempText[nExtensionLength+6]=0;
 				nExtensionLength=6;
 				
 			}
 			if (o_pCommand->m_objPrefix.m_nLnr==0xf3){//rep
 				strTempText=(char*)malloc(nExtensionLength+5);//'rep ',0
 				strcpy(strTempText, "rep_");
-				strTempText[nExtensionLength+5]=0;
+				strTempText[nExtensionLength+4]=0;
 				nExtensionLength=4;
 			}
 
