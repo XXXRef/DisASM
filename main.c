@@ -829,24 +829,38 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 					o_pCommand->m_objSib.m_nSib=pBytes[idxByte];
 					++idxByte;//SIB parsed
 
-					pStrRegister = g_colStrRegisters32[o_pCommand->m_objSib.m_nBase];
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, pStrRegister, 3);
-					
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 4, "+e", 2);
-					
-					memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 6,
-						g_colStrRegisters16[o_pCommand->m_objSib.m_nIndex], 2);
-					
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+8]='*';
-					nExtensionLength=0;
-					nBufferByte=1;
-					
-					while (nExtensionLength < o_pCommand->m_objSib.m_nScale){
-						nBufferByte*=2;
-						++nExtensionLength;
-					}	
-					o_pCommand->m_pParameters[idxOperand][nCommandLength+9]=nBufferByte+'0';
-					nBufferByte=10;
+					nBufferByte=0;
+					if (o_pCommand->m_objModrm.m_nMod!=0 ||
+						o_pCommand->m_objSib.m_nBase!=5){
+						pStrRegister = g_colStrRegisters32[o_pCommand->m_objSib.m_nBase];
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1,
+							pStrRegister, 3);
+						nBufferByte=3;
+					}
+
+					if (o_pCommand->m_objSib.m_nIndex!=4){
+						if (nBufferByte!=0){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]='+';
+							++nBufferByte;
+						}
+						pStrRegister = g_colStrRegisters32[o_pCommand->m_objSib.m_nIndex];
+						memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + nBufferByte + 1,
+							pStrRegister, 3);
+						nBufferByte+=3;
+
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+1]='*';
+						nBufferByte2=1;
+						nExtensionLength=0;
+						while (nExtensionLength < o_pCommand->m_objSib.m_nScale){
+							nBufferByte2*=2;
+							++nExtensionLength;
+						}
+						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]=nBufferByte2+'0';
+						nBufferByte+=2;
+					}
+					if (nBufferByte!=0){
+						++nBufferByte;
+					}
 					break;
 					
 				case 5://can be displacement only
@@ -877,6 +891,11 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 					
 				}
 				nExtensionLength=o_pCommand->m_objModrm.m_nMod*o_pCommand->m_objModrm.m_nMod;//in ext_len number of displacement bytes
+				if (o_pCommand->m_objModrm.m_nRm==4 &&
+					o_pCommand->m_objModrm.m_nMod==0 &&
+					o_pCommand->m_objSib.m_nBase==5){
+					nExtensionLength=4;
+				}
 				if (nExtensionLength!=0){
 					if ((nExtensionLength==1) && (pBytes[idxByte]>0x7f)){//1 byte sign extended
 						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='-';
@@ -889,7 +908,9 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]='A'+o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+2]-'0'-10;
 						}
 					}else{
-						o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='+';
+						if (nBufferByte!=0){
+							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte]='+';
+						}
 						while (nExtensionLength!=0){
 							o_pCommand->m_pParameters[idxOperand][nCommandLength+nBufferByte+nExtensionLength*2]=pBytes[idxByte]%16+'0';
 							//printf("\tmp[bytecounter]:%d\n",mp[bytecounter]);
