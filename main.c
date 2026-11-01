@@ -74,6 +74,19 @@ static void writeHexByte(char* i_pDestination, unsigned int i_nValue)
 }
 
 
+static char getSegmentTypeByPrefix(unsigned char i_nPrefix)
+{
+    switch (i_nPrefix) {
+        case 0x2E: return 'C';
+        case 0x36: return 'S';
+        case 0x26: return 'E';
+        case 0x64: return 'F';
+        case 0x65: return 'G';
+        default:   return 'D'; // includes cases 0x3E(DS)/no override
+    }
+}
+
+
 static const char* getGeneralPurposeRegister(int i_nRegisterIdx, int i_nBitness)
 {
 	if (i_nRegisterIdx < 0 || i_nRegisterIdx >= 8) {
@@ -789,29 +802,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength, "_PTR_", 5);
 			nCommandLength+=5;
 
-			switch(o_pCommand->m_objPrefix.m_nSegr){
-			case 0x2e: //cs
-				o_pCommand->m_pParameters[idxOperand][nCommandLength]='C';
-				break;
-			case 0x36://ss
-				o_pCommand->m_pParameters[idxOperand][nCommandLength]='S';
-				
-				break;
-			case 0x26: //es
-				o_pCommand->m_pParameters[idxOperand][nCommandLength]='E';
-				
-				break;
-			case 0x64: //fs
-				o_pCommand->m_pParameters[idxOperand][nCommandLength]='F';
-				
-				break;
-			case 0x65: //gs
-				o_pCommand->m_pParameters[idxOperand][nCommandLength]='G';
-				break;
-			default: //ds
-				o_pCommand->m_pParameters[idxOperand][nCommandLength]='D';
-				break;
-			}
+            o_pCommand->m_pParameters[idxOperand][nCommandLength] = getSegmentTypeByPrefix(o_pCommand->m_objPrefix.m_nSegr);
 
 			memcpy(o_pCommand->m_pParameters[idxOperand] + nCommandLength + 1, "S:[", 3);
 			nCommandLength+=3;
@@ -1080,34 +1071,9 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			memcpy(o_pCommand->m_pParameters[idxOperand] + nExtensionLength, "_PTR_", 5);
 			nExtensionLength+=5;
 
-			if (0==idxOperand){//1st par
-				
-				switch (o_pCommand->m_objPrefix.m_nSegr){
-				case 0x2e: //cs
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='C';
-					break;
-				case 0x36://ss
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='S';
-					
-					break;
-				case 0x26: //es
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
-					
-					break;
-				case 0x64: //fs
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='F';
-					
-					break;
-				case 0x65: //gs
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='G';
-					break;
-				default:
-					o_pCommand->m_pParameters[idxOperand][nExtensionLength]='D';
-					break;
-				}
-			}else{
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
-			}
+            o_pCommand->m_pParameters[idxOperand][nCommandLength] = (0==idxOperand) ?
+                getSegmentTypeByPrefix(o_pCommand->m_objPrefix.m_nSegr) : 'E';
+
 			memcpy(o_pCommand->m_pParameters[idxOperand] + nExtensionLength + 1, "S:[", 3);
 			nExtensionLength+=4;
 			if (o_pCommand->m_objPrefix.m_nSr!=0x67){//no 0x67-4byte addr
@@ -1147,25 +1113,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			nExtensionLength=0;
 			strcpy(o_pCommand->m_pParameters[idxOperand], "BYTE_PTR_");
 
-			o_pCommand->m_pParameters[idxOperand][9]='D';
-
-			switch(o_pCommand->m_objPrefix.m_nSegr){
-			case 0x2e:
-				o_pCommand->m_pParameters[idxOperand][9]='C';
-				break;
-			case 0x36:
-				o_pCommand->m_pParameters[idxOperand][9]='S';
-				break;
-			case 0x26:
-				o_pCommand->m_pParameters[idxOperand][9]='E';
-				break;
-			case 0x64:
-				o_pCommand->m_pParameters[idxOperand][9]='F';
-				break;
-			case 0x65:
-				o_pCommand->m_pParameters[idxOperand][9]='G';
-				break;
-			}
+            o_pCommand->m_pParameters[idxOperand][9] = getSegmentTypeByPrefix(o_pCommand->m_objPrefix.m_nSegr);
 
 			memcpy(o_pCommand->m_pParameters[idxOperand] + 10, "S:[", 3);
 
@@ -1255,26 +1203,7 @@ int SCommand_GetCommand(SCommand* o_pCommand, FILE* i_hTargetFile, int i_nAvaila
 			memcpy(o_pCommand->m_pParameters[idxOperand] + nExtensionLength, "_PTR_", 5);
 			nExtensionLength+=5;
 
-			switch(o_pCommand->m_objPrefix.m_nSegr){
-			case 0x2e: //cs
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='C';
-				break;
-			case 0x36://ss
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='S';
-				break;
-			case 0x26: //es
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='E';
-				break;
-			case 0x64: //fs
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='F';
-				break;
-			case 0x65: //gs
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='G';
-				break;
-			default:
-				o_pCommand->m_pParameters[idxOperand][nExtensionLength]='D';
-				break;
-			}
+            o_pCommand->m_pParameters[idxOperand][nExtensionLength] = getSegmentTypeByPrefix(o_pCommand->m_objPrefix.m_nSegr);
 
 			memcpy(o_pCommand->m_pParameters[idxOperand] + nExtensionLength + 1, "S:[", 3);
 			nExtensionLength+=4;
